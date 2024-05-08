@@ -1,8 +1,6 @@
 /** A basic fiber interface. **/
-#ifndef __FIBER_H
-#define __FIBER_H
-
-#include <stdlib.h>
+#ifndef WASMFX_FIBER_C_H
+#define WASMFX_FIBER_C_H
 
 /** The signature of a fiber entry point. **/
 typedef void* (*fiber_entry_point_t)(void*);

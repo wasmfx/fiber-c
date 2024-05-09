@@ -5,7 +5,8 @@
 #include <assert.h>
 
 #include "fiber.h"
-#include "wasm_utils.h"
+#define import(NAME) __attribute__((import_module("asyncify"),import_name(NAME)))
+
 
 /** Asyncify imports **/
 // The following functions are asyncify primitives:
@@ -18,23 +19,23 @@
 // * asyncfiy_stop_rewind(): delimits the extent of a continuation
 //  reinstatement.
 extern
-__wasm_import__("asyncify", "start_unwind")
+import("start_unwind")
 void asyncify_start_unwind(void*);
 
 extern
-__wasm_import__("asyncify", "stop_unwind")
+import("stop_unwind")
 void asyncify_stop_unwind(void);
 
 extern
-__wasm_import__("asyncify", "start_rewind")
+import("start_rewind")
 void asyncify_start_rewind(void*);
 
 extern
-__wasm_import__("asyncify", "stop_rewind")
+import("stop_rewind")
 void asyncify_stop_rewind(void);
 
 // The default stack size is 2MB.
-static const size_t FIBER_DEFAULT_STACK_SIZE = 2097152;
+static const size_t stack_size = ASYNCIFY_DEFAULT_STACK_SIZE;
 
 // We track the currently active fiber via this global variable.
 static volatile fiber_t active_fiber = NULL;
@@ -100,14 +101,12 @@ fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
 
 // Allocates a fiber object with the default stack size.
 __attribute__((noinline))
-__wasm_export__("fiber_alloc")
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
-  return fiber_sized_alloc(FIBER_DEFAULT_STACK_SIZE, entry);
+  return fiber_sized_alloc(stack_size, entry);
 }
 
 // Frees a fiber object.
 __attribute__((noinline))
-__wasm_export__("fiber_free")
 void fiber_free(fiber_t fiber) {
   fiber_stack_free(fiber->stack);
   free(fiber);
@@ -116,7 +115,6 @@ void fiber_free(fiber_t fiber) {
 // Yields control from within a fiber computation to whichever point
 // originally resumed the fiber.
 __attribute__((noinline))
-__wasm_export__("fiber_yield")
 void* fiber_yield(void *arg) {
   if (active_fiber->state == YIELDING) {
     asyncify_stop_rewind();
@@ -132,7 +130,6 @@ void* fiber_yield(void *arg) {
 
 // Resumes a given fiber. Control is transferred to the fiber.
 __attribute__((noinline))
-__wasm_export__("fiber_resume")
 void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
   // If we are done, signal error and return.
   if (fiber->state == DONE) {
@@ -175,9 +172,9 @@ void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
 }
 
 // Noop in this implementation.
-__wasm_export__("fiber_init")
-void fiber_init() {}
+void fiber_init(void) {}
 
 // Noop in this implementation.
-__wasm_export__("fiber_finalize")
-void fiber_finalize() {}
+void fiber_finalize(void) {}
+
+#undef import

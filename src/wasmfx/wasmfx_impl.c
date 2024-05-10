@@ -3,9 +3,10 @@
 #include <stdint.h>
 
 #include "fiber.h"
-#include "wasm_utils.h"
 
-// Type for indices into the continuation table `$conts` on the wasm side. In
+#define import(NAME) __attribute__((import_module("fiber_wasmfx_imports"),import_name(NAME)))
+
+// Type for indices into the continuation table `$conts` on the Wasm side. In
 // this implementation, we consider `fiber_t` (which is a pointer to an
 // incomplete type) to be equivalent to `cont_table_index_t` and freely convert
 // between the two.
@@ -17,7 +18,7 @@ static const uint32_t initial_table_capacity = WASMFX_CONT_TABLE_INITIAL_CAPACIT
 
 // The current capacity of the `$conts` table.
 static uint32_t cont_table_capacity = initial_table_capacity;
-// Number of entries at the end of `$conts` table that we have never used so
+// Number of entries at the end of `$conts` table that we haven't used so
 // far.
 // Invariant:
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity`
@@ -34,23 +35,22 @@ static uint32_t free_list_size = 0;
 
 
 extern
-__wasm_import__("fiber_wasmfx_imports", "wasmfx_grow_cont_table")
-void wasmfx_grow_cont_table(size_t);
+import("wasmfx_grow_cont_table")
+void wasmfx_grow_cont_table(uint32_t);
 
 extern
-__wasm_import__("fiber_wasmfx_imports", "wasmfx_indexed_cont_new")
+import("wasmfx_indexed_cont_new")
 void wasmfx_indexed_cont_new(fiber_entry_point_t, cont_table_index_t);
 
 extern
-__wasm_import__("fiber_wasmfx_imports", "wasmfx_indexed_resume")
-void* wasmfx_indexed_resume(size_t fiber_index, void *arg, fiber_result_t *result);
+import("wasmfx_indexed_resume")
+void* wasmfx_indexed_resume(uint32_t fiber_index, void *arg, fiber_result_t *result);
 
 extern
-__wasm_import__("fiber_wasmfx_imports", "wasmfx_suspend")
+import("wasmfx_suspend")
 void* wasmfx_suspend(void *arg);
 
-
-static cont_table_index_t wasmfx_acquire_table_index() {
+static cont_table_index_t wasmfx_acquire_table_index(void) {
   uintptr_t table_index;
   if (cont_table_unused_size > 0) {
     // There is an entry in the continuation table that has not been used so far.
@@ -62,13 +62,13 @@ static cont_table_index_t wasmfx_acquire_table_index() {
       free_list_size--;
   } else {
       // We have run out of table entries.
-      size_t new_cont_table_capacity = 2 * cont_table_capacity;
+      uint32_t new_cont_table_capacity = 2 * cont_table_capacity;
 
       // Ask wasm to grow the table by the previous size, and we grow the
       // `free_list` ourselves.
       wasmfx_grow_cont_table(cont_table_capacity);
       free(free_list);
-      free_list = malloc(sizeof(size_t) * new_cont_table_capacity);
+      free_list = malloc(sizeof(uint32_t) * new_cont_table_capacity);
 
       // We added `cont_table_capacity` new entries to the table, and then
       // immediately consume one for the new continuation.
@@ -84,7 +84,6 @@ static void wasmfx_release_table_index(cont_table_index_t table_index) {
   free_list_size++;
 }
 
-__wasm_export__("fiber_alloc")
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
   cont_table_index_t table_index = wasmfx_acquire_table_index();
   wasmfx_indexed_cont_new(entry, table_index);
@@ -92,7 +91,6 @@ fiber_t fiber_alloc(fiber_entry_point_t entry) {
   return (fiber_t) table_index;
 }
 
-__wasm_export__("fiber_free")
 void fiber_free(fiber_t fiber) {
   cont_table_index_t table_index = (cont_table_index_t) fiber;
 
@@ -101,23 +99,21 @@ void fiber_free(fiber_t fiber) {
   wasmfx_release_table_index(table_index);
 }
 
-__wasm_export__("fiber_resume")
 void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
   cont_table_index_t table_index = (cont_table_index_t) fiber;
   return wasmfx_indexed_resume(table_index, arg, result);
 }
 
-__wasm_export__("fiber_yield")
 void* fiber_yield(void *arg) {
   return wasmfx_suspend(arg);
 }
 
-__wasm_export__("fiber_init")
-void fiber_init() {
-  free_list = malloc(initial_table_capacity * sizeof(size_t));
+void fiber_init(void) {
+  free_list = malloc(initial_table_capacity * sizeof(uint32_t));
 }
 
-__wasm_export__("fiber_finalize")
-void fiber_finalize() {
+void fiber_finalize(void) {
   free(free_list);
 }
+
+#undef import

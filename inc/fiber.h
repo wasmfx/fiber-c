@@ -14,7 +14,7 @@ typedef struct fiber* fiber_t;
 export("fiber_alloc")
 fiber_t fiber_alloc(fiber_entry_point_t entry);
 
-/** Reclaims the memory occupied by a fiber object. **/
+/** Reclaims the memory occupied by the fiber object. **/
 export("fiber_free")
 void fiber_free(fiber_t fiber);
 
@@ -26,18 +26,22 @@ void* fiber_yield(void *arg);
 /** Possible status codes for `fiber_resume`. **/
 typedef enum { FIBER_OK = 0, FIBER_YIELD = 1, FIBER_ERROR = 2 } fiber_result_t;
 
-/** Resumes a given `fiber` with argument `arg`. **/
+/** Resumes a given `fiber` with argument `arg`, returning some value
+    of type `void*`. The output parameter `status` indicates whether
+    the fiber ran to completion (`FIBER_OK`), yielded control
+    (`FIBER_YIELD`), or failed (`FIBER_ERROR`), in the latter case the
+    return value will always be `NULL`. **/
 export("fiber_resume")
-void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result);
+void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *status);
 
 
-/** Initializes fiber support. Must be called exactly once before using any of
-    the other fiber_* functions. **/
+/** Initialises the fiber runtime. It must be called exactly once
+    before using any of the other fiber_* functions. **/
 export("fiber_init")
 void fiber_init(void);
 
-/** Un-initializes fiber support. If fiber_initialize has ever beed called, then
-    fiber_uninitialize must called prior to exiting the program. **/
+/** Tears down the fiber runtime. It must be called after the final
+    use of any of the other fiber_* functions. **/
 export("fiber_finalize")
 void fiber_finalize(void);
 

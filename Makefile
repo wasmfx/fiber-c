@@ -21,7 +21,7 @@ hello_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c e
 	chmod +x hello_wasmfx.wasm
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
-	$(WASICC) -xc -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | tail -n+8 > src/wasmfx/imports.wat
+	$(WASICC) -xc -DWHOLE_PROGRAM_NAME="\"example\"" -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | tail -n+8 > src/wasmfx/imports.wat
 
 .PHONY: clean
 clean:

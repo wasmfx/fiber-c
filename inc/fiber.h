@@ -3,9 +3,6 @@
 #define WASMFX_FIBER_C_H
 
 #define export(NAME) __attribute__((export_name(NAME)))
-#define __wasm_import__(MODULE, NAME) __attribute__((import_module(MODULE),import_name(NAME)))
-#define __wasm_export__(NAME) __attribute__((export_name(NAME)))
-
 
 /** The signature of a fiber entry point. **/
 typedef void* (*fiber_entry_point_t)(void*);

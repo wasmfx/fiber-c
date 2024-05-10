@@ -6,9 +6,9 @@
 
   ;; We must make sure that there is only a single memory, so that our
   ;; load/store instructions act on the C heap, not a separate memory.
-  (import WHOLE_PROGRAM_NAME "memory" (memory $0 2))
+  (import "main" "memory" (memory $0 2))
   ;; This is created by clang to translate function pointers.
-  (import WHOLE_PROGRAM_NAME "__indirect_function_table" (table $indirect_function_table 0 funcref))
+  (import "main" "__indirect_function_table" (table $indirect_function_table 0 funcref))
 
 
   ;; Keep the initial size of this table in sync with INITIAL_TABLE_CAPACITY in

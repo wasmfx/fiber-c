@@ -17,11 +17,11 @@ hello_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/hello.c
 hello_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c examples/hello.c
 	$(WASICC) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/hello.c -o hello_wasmfx.pre.wasm
 	$(WASM_INTERP) -d -i src/wasmfx/imports.wat -o fiber_wasmfx_imports.wasm
-	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" hello_wasmfx.pre.wasm "example" -o hello_wasmfx.wasm
+	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" hello_wasmfx.pre.wasm "main" -o hello_wasmfx.wasm
 	chmod +x hello_wasmfx.wasm
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
-	$(WASICC) -xc -DWHOLE_PROGRAM_NAME="\"example\"" -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | tail -n+8 > src/wasmfx/imports.wat
+	$(WASICC) -xc -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | tail -n+8 > src/wasmfx/imports.wat
 
 .PHONY: clean
 clean:

@@ -33,6 +33,34 @@ static uint32_t* free_list = NULL;
 // Invariant: free_list_size <= `cont_table_capacity`.
 static uint32_t free_list_size = 0;
 
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+static const size_t cont_shadow_stack_size = WASMFX_CONT_SHADOW_STACK_SIZE;
+
+// Given a table index i, `sstack_bottom_ptrs[i]` is the beginning of the shadow
+// stack allocation of continuation i.
+// Invariant: sstack_bottom_ptrs has as many entries as `cont_table_capacity`
+static void** sstack_bottom_ptrs;
+// Given a table index i, `sstack_current_ptrs[i]` is the current stack pointer
+// value of continuation i.
+// Invariant: sstack_current_ptrs has as many entries as `cont_table_capacity`
+static void** sstack_current_ptrs;
+
+
+static void init_shadow_stack(cont_table_index_t table_index) {
+  char* shadow_stack_bottom = malloc(cont_shadow_stack_size);
+  void* shadow_stack_usable_top =
+    ((char*)shadow_stack_bottom) + cont_shadow_stack_size - 0x10;
+  sstack_bottom_ptrs[table_index] = shadow_stack_bottom;
+  sstack_current_ptrs[table_index] = shadow_stack_usable_top;
+}
+#endif
+
+// Counterpart to fiber_init, doing one-time initialization required in wasm
+// code. Parameter must be &sstack_current_ptrs_addr if preserving shadow stacks
+// is requested, otherwise an arbitrary value may be supplied.
+extern
+import("wasmfx_fiber_init_wat")
+void wasmfx_fiber_init_wat(void* sstack_current_ptrs_addr);
 
 extern
 import("wasmfx_grow_cont_table")
@@ -56,6 +84,9 @@ static cont_table_index_t wasmfx_acquire_table_index(void) {
     // There is an entry in the continuation table that has not been used so far.
     table_index = cont_table_capacity - cont_table_unused_size;
     cont_table_unused_size--;
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+    init_shadow_stack(table_index);
+#endif
   } else if (free_list_size > 0) {
       // We can pop an element from the free list stack.
       table_index = free_list[free_list_size - 1];
@@ -75,6 +106,12 @@ static cont_table_index_t wasmfx_acquire_table_index(void) {
       cont_table_unused_size = cont_table_capacity - 1;
       table_index = cont_table_capacity;
       cont_table_capacity = new_cont_table_capacity;
+
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+      sstack_bottom_ptrs = realloc(sstack_bottom_ptrs, sizeof(void*) * new_cont_table_capacity);
+      sstack_current_ptrs = realloc(sstack_current_ptrs, sizeof(void*) * new_cont_table_capacity);
+      init_shadow_stack(table_index);
+#endif
   }
   return table_index;
 }
@@ -82,6 +119,13 @@ static cont_table_index_t wasmfx_acquire_table_index(void) {
 static void wasmfx_release_table_index(cont_table_index_t table_index) {
   free_list[free_list_size] = table_index;
   free_list_size++;
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+  // Note that we do not free shadow stacks, but simply reset them for
+  // subsequent re-use.
+  void* shadow_stack_usable_top =
+    ((char*)sstack_bottom_ptrs[table_index]) + cont_shadow_stack_size - 0x10;
+  sstack_current_ptrs[table_index] = shadow_stack_usable_top;
+#endif
 }
 
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
@@ -110,10 +154,24 @@ void* fiber_yield(void *arg) {
 
 void fiber_init(void) {
   free_list = malloc(initial_table_capacity * sizeof(uint32_t));
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+  sstack_bottom_ptrs = malloc(initial_table_capacity * sizeof(void*));
+  sstack_current_ptrs = malloc(initial_table_capacity * sizeof(void*));
+  wasmfx_fiber_init_wat(&sstack_current_ptrs);
+#else
+  wasmfx_fiber_init_wat(NULL);
+#endif
 }
 
 void fiber_finalize(void) {
   free(free_list);
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+  for (size_t i = 0; i < cont_table_capacity - cont_table_unused_size; i++) {
+    free(sstack_bottom_ptrs[i]);
+  }
+  free(sstack_bottom_ptrs);
+  free(sstack_current_ptrs);
+#endif
 }
 
 #undef import

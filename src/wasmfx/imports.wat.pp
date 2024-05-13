@@ -10,6 +10,14 @@
   ;; This is created by clang to translate function pointers.
   (import "main" "__indirect_function_table" (table $indirect_function_table 0 funcref))
 
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+  ;; The shadow stack pointer, created by clang
+  (import "main" "__stack_pointer" (global $sstack_ptr (mut i32)))
+#endif
+
+  ;; The *address* where the global C variable sstack_current_ptrs is stored
+  ;; in linear memory
+  (global $sstack_current_ptrs_addr (mut i32) (i32.const 0))
 
   ;; Keep the initial size of this table in sync with INITIAL_TABLE_CAPACITY in
   ;; .c file.
@@ -21,6 +29,12 @@
   (func $grow_cont_table (export "wasmfx_grow_cont_table") (param $capacity_delta i32)
     (table.grow $conts (ref.null $ct1) (local.get $capacity_delta))
     (drop)
+  )
+
+  ;; One-time initialization
+  (func $wasmfx_fiber_init_wat (export "wasmfx_fiber_init_wat")
+        (param $sstack_current_ptrs_addr i32)
+    (global.set $sstack_current_ptrs_addr (local.get $sstack_current_ptrs_addr))
   )
 
   ;; This function is the entry point of all of our continuations.
@@ -57,6 +71,20 @@
     (param $result_ptr i32)
     (result i32)
     (local $k (ref $ct1))
+    (local $old_shadow_sp i32)
+
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+    (local.set $old_shadow_sp (global.get $sstack_ptr))
+    ;; The following 5 instructions are equivalent to the following C code
+    ;; (inlined here until we have wasm-opt):
+    ;; __shadow_stack_ptr = sstack_current_ptrs[cont_index]
+
+    (i32.load (global.get $sstack_current_ptrs_addr))
+    (i32.mul (i32.const 4) (local.get $cont_index))
+    (i32.add)
+    (i32.load)
+    (global.set $sstack_ptr)
+#endif
 
     (block $handler (result i32 (ref $ct1) )
       (block $on_error
@@ -67,6 +95,12 @@
         (resume $ct1 (tag $yield $handler) (local.get $arg) (local.get $k))
         (i32.store (local.get $result_ptr) (i32.const 0)) ;; FIBER_OK
         (table.set $conts (local.get $cont_index) (ref.null $ct1))
+
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+        ;; No need to save $sstack_ptr as continuation finished
+        (global.set $sstack_ptr (local.get $old_shadow_sp))
+#endif
+
         (return) ;; returns the value put on stack by resume
       ) ;; continuation is null
       (i32.store (local.get $result_ptr) (i32.const 2)) ;; FIBER_ERROR
@@ -78,6 +112,20 @@
     (table.set $conts (local.get $cont_index) (local.get $k))
 
     (i32.store (local.get $result_ptr) (i32.const 1)) ;; FIBER_YIELD
+
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+    ;; The following 5 instructions are equivalent to the following C code
+    ;; (inlined here until we have wasm-opt):
+    ;; sstack_current_ptrs[cont_index] = __shadow_stack_ptr
+    (i32.load (global.get $sstack_current_ptrs_addr))
+    (i32.mul (i32.const 4) (local.get $cont_index))
+    (i32.add)
+    (global.get $sstack_ptr)
+    (i32.store)
+
+    (global.set $sstack_ptr (local.get $old_shadow_sp))
+#endif
+
     ;; return suspend payload
     (return)
   )

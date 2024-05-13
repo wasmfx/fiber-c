@@ -12,7 +12,7 @@
 
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
   ;; The shadow stack pointer, created by clang
-  (import "main" "__exported_shadow_stack_pointer" (global $sstack_ptr (mut i32)))
+  (import "main" "__stack_pointer" (global $sstack_ptr (mut i32)))
 #endif
 
   ;; The *address* where the global C variable sstack_current_ptrs is stored

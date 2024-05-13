@@ -31,6 +31,7 @@ void* world(void *arg) {
 }
 
 int main(void) {
+  fiber_init();
   fiber_result_t status;
   fiber_t hello_fiber = fiber_alloc(hello);
   fiber_t world_fiber = fiber_alloc(world);
@@ -57,5 +58,6 @@ int main(void) {
   putc('\n', stdout);
   fflush(stdout);
 
+  fiber_finalize();
   return 0;
 }

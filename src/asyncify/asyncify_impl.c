@@ -116,7 +116,9 @@ fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
 #if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
   (void)stack_size;
   fiber->stack = stack_pool_next(&pool);
-  /* fiber->stack.top = fiber->stack.buffer */;
+  // TODO(dhil): It may be necessary to reset the top pointer.  I'd
+  // need to test on a larger example.
+  // fiber->stack.top = fiber->stack.buffer
 #else
   fiber->stack = fiber_stack_alloc(stack_size);
 #endif
@@ -209,6 +211,7 @@ void fiber_init(void) {
   for (uint32_t i = 0; i < STACK_POOL_SIZE; i++) {
     stack_pool_reclaim(&pool, fiber_stack_alloc(default_stack_size));
   }
+  assert(pool.next == 0);
 #endif
 }
 

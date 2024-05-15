@@ -58,6 +58,9 @@ int main(void) {
   putc('\n', stdout);
   fflush(stdout);
 
+  fiber_free(hello_fiber);
+  fiber_free(world_fiber);
+
   fiber_finalize();
   return 0;
 }

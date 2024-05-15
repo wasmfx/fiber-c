@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
   for (uint32_t i = 0; i < p; i++) {
     (void)fiber_resume(filters[i], (void*)(intptr_t)0, &status);
     assert(status == FIBER_OK);
+    fiber_free(filters[i]);
   }
   free(filters);
   fiber_finalize();

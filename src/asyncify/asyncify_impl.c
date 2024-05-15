@@ -35,7 +35,7 @@ import("stop_rewind")
 void asyncify_stop_rewind(void);
 
 // The default stack size is 2MB.
-static const size_t stack_size = ASYNCIFY_DEFAULT_STACK_SIZE;
+static const size_t default_stack_size = ASYNCIFY_DEFAULT_STACK_SIZE;
 
 // We track the currently active fiber via this global variable.
 static volatile fiber_t active_fiber = NULL;
@@ -86,13 +86,40 @@ static void fiber_stack_free(struct fiber_stack fiber_stack) {
   free(fiber_stack.buffer);
 }
 
+#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+// Fiber stack pool
+struct stack_pool {
+  int32_t next;
+  struct fiber_stack stacks[STACK_POOL_SIZE];
+};
+
+static struct fiber_stack stack_pool_next(volatile struct stack_pool *pool) {
+  assert(pool->next >= 0 && pool->next < STACK_POOL_SIZE);
+  return pool->stacks[pool->next++];
+}
+
+static void stack_pool_reclaim(volatile struct stack_pool *pool, struct fiber_stack stack) {
+  assert(pool->next > 0 && pool->next <= STACK_POOL_SIZE);
+  pool->stacks[--pool->next] = stack;
+  return;
+}
+
+static volatile struct stack_pool pool;
+#endif
+
 // Allocates a fiber object.
 // NOTE: the entry point `fn` should be careful about uses of `printf`
 // and related functions, as they can cause asyncify to corrupt its
 // own state. See `wasi-io.h` for asyncify-safe printing functions.
 fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
   fiber_t fiber = (fiber_t)malloc(sizeof(struct fiber));
+#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+  (void)stack_size;
+  fiber->stack = stack_pool_next(&pool);
+  /* fiber->stack.top = fiber->stack.buffer */;
+#else
   fiber->stack = fiber_stack_alloc(stack_size);
+#endif
   fiber->state = ACTIVE;
   fiber->entry = entry;
   fiber->arg = NULL;
@@ -102,13 +129,17 @@ fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
 // Allocates a fiber object with the default stack size.
 __attribute__((noinline))
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
-  return fiber_sized_alloc(stack_size, entry);
+  return fiber_sized_alloc(default_stack_size, entry);
 }
 
 // Frees a fiber object.
 __attribute__((noinline))
 void fiber_free(fiber_t fiber) {
+#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+  stack_pool_reclaim(&pool, fiber->stack);
+#else
   fiber_stack_free(fiber->stack);
+#endif
   free(fiber);
 }
 
@@ -171,10 +202,25 @@ void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
   }
 }
 
-// Noop in this implementation.
-void fiber_init(void) {}
+// Noop when stack pooling is disabled.
+void fiber_init(void) {
+#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+  pool.next = STACK_POOL_SIZE;
+  for (uint32_t i = 0; i < STACK_POOL_SIZE; i++) {
+    stack_pool_reclaim(&pool, fiber_stack_alloc(default_stack_size));
+  }
+#endif
+}
 
-// Noop in this implementation.
-void fiber_finalize(void) {}
+// Noop when stack pooling is disabled.
+void fiber_finalize(void) {
+#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+  assert(pool.next == 0);
+  for (uint32_t i = 0; i < STACK_POOL_SIZE; i++) {
+    fiber_stack_free(stack_pool_next(&pool));
+  }
+  assert(pool.next == STACK_POOL_SIZE);
+#endif
+}
 
 #undef import

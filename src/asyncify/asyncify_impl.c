@@ -86,7 +86,7 @@ static void fiber_stack_free(struct fiber_stack fiber_stack) {
   free(fiber_stack.buffer);
 }
 
-#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+#if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
 // Fiber stack pool
 struct stack_pool {
   int32_t next;
@@ -113,12 +113,12 @@ static volatile struct stack_pool pool;
 // own state. See `wasi-io.h` for asyncify-safe printing functions.
 fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
   fiber_t fiber = (fiber_t)malloc(sizeof(struct fiber));
-#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+#if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
   (void)stack_size;
   fiber->stack = stack_pool_next(&pool);
   // TODO(dhil): It may be necessary to reset the top pointer.  I'd
   // need to test on a larger example.
-  // fiber->stack.top = fiber->stack.buffer
+  fiber->stack.top = fiber->stack.buffer;
 #else
   fiber->stack = fiber_stack_alloc(stack_size);
 #endif
@@ -137,7 +137,7 @@ fiber_t fiber_alloc(fiber_entry_point_t entry) {
 // Frees a fiber object.
 __attribute__((noinline))
 void fiber_free(fiber_t fiber) {
-#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+#if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
   stack_pool_reclaim(&pool, fiber->stack);
 #else
   fiber_stack_free(fiber->stack);
@@ -206,7 +206,7 @@ void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
 
 // Noop when stack pooling is disabled.
 void fiber_init(void) {
-#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+#if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
   pool.next = STACK_POOL_SIZE;
   for (uint32_t i = 0; i < STACK_POOL_SIZE; i++) {
     stack_pool_reclaim(&pool, fiber_stack_alloc(default_stack_size));
@@ -217,7 +217,7 @@ void fiber_init(void) {
 
 // Noop when stack pooling is disabled.
 void fiber_finalize(void) {
-#if defined USE_STACK_POOLING && USE_STACK_POOLING == 1
+#if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
   assert(pool.next == 0);
   for (uint32_t i = 0; i < STACK_POOL_SIZE; i++) {
     fiber_stack_free(stack_pool_next(&pool));

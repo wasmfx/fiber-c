@@ -45,6 +45,35 @@ sieve_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c e
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" sieve_wasmfx.pre.wasm "main" -o sieve_wasmfx.wasm
 	chmod +x sieve_wasmfx.wasm
 
+.PHONY: itersum
+itersum: itersum_asyncify.wasm itersum_wasmfx.wasm
+
+itersum_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/itersum.c
+	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/itersum.c -o itersum_asyncfiy.pre.wasm
+	$(ASYNCIFY) itersum_asyncfiy.pre.wasm -o itersum_asyncify.wasm
+	chmod +x itersum_asyncify.wasm
+
+itersum_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c examples/itersum.c
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/itersum.c -o itersum_wasmfx.pre.wasm
+	$(WASM_INTERP) -d -i src/wasmfx/imports.wat -o fiber_wasmfx_imports.wasm
+	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" itersum_wasmfx.pre.wasm "main" -o itersum_wasmfx.wasm
+	chmod +x itersum_wasmfx.wasm
+
+.PHONY: treesum
+treesum: treesum_asyncify.wasm treesum_wasmfx.wasm
+
+treesum_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/treesum.c
+	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/treesum.c -o treesum_asyncfiy.pre.wasm
+	$(ASYNCIFY) treesum_asyncfiy.pre.wasm -o treesum_asyncify.wasm
+	chmod +x treesum_asyncify.wasm
+
+treesum_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c examples/treesum.c
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/treesum.c -o treesum_wasmfx.pre.wasm
+	$(WASM_INTERP) -d -i src/wasmfx/imports.wat -o fiber_wasmfx_imports.wasm
+	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" treesum_wasmfx.pre.wasm "main" -o treesum_wasmfx.wasm
+	chmod +x treesum_wasmfx.wasm
+
+
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports.wat
 

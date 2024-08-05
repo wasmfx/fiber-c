@@ -92,7 +92,7 @@
         (local.set $k (br_on_null $on_error
            (table.get $conts (local.get $cont_index))))
         ;; resume the continuation
-        (resume $ct1 (tag $yield $handler) (local.get $arg) (local.get $k))
+        (resume $ct1 (on $yield $handler) (local.get $arg) (local.get $k))
         (i32.store (local.get $result_ptr) (i32.const 0)) ;; FIBER_OK
         (table.set $conts (local.get $cont_index) (ref.null $ct1))
 

@@ -8,7 +8,5 @@ Wasm.
 
 This library offers two backends:
 
-1. An Asyncify-based implementation, which provides a stackless
-implementation of fibers.
-2. A WasmFX powered implementation, which provides a native stackful
-implementation of fibers.
+1. Stackless fibers using the Asyncify transform of binaryen.
+2. Native stackful fibers powered by the WasmFX instruction set.

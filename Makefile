@@ -4,11 +4,11 @@ WASMFX_CONT_TABLE_INITIAL_CAPACITY?=1024
 WASMFX_PRESERVE_SHADOW_STACK?=1
 # Only relevant if WASMFX_PRESERVE_SHADOW_STACK is 1
 WASMFX_CONT_SHADOW_STACK_SIZE?=65536
-ASYNCIFY=../benchfx/binaryenfx/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-typed-continuations -O2 --asyncify
+ASYNCIFY=../benchfx/binaryenfx/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 --asyncify
 WASICC=../benchfx/wasi-sdk-22.0/bin/clang
 WASIFLAGS=--sysroot=../benchfx/wasi-sdk-22.0/share/wasi-sysroot -std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes -O3 -I inc
 WASM_INTERP=../spec/interpreter/wasm
-WASM_MERGE=../benchfx/binaryenfx/bin/wasm-merge --enable-multimemory --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-typed-continuations
+WASM_MERGE=../benchfx/binaryenfx/bin/wasm-merge --enable-multimemory --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching
 
 ifeq ($(WASMFX_PRESERVE_SHADOW_STACK),1)
   SHADOW_STACK_FLAG=-DFIBER_WASMFX_PRESERVE_SHADOW_STACK

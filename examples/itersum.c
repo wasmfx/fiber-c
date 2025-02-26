@@ -18,7 +18,7 @@ int32_t run(int32_t max) {
   fiber_t gen = fiber_alloc(sum);
   int32_t result = 0, i = 0;
 
-  void* val = fiber_resume(gen, (void*)(intptr_t)i, &status);
+  void* val = fiber_resume(gen, (void*)(intptr_t)max, &status);
 
   while (status == FIBER_YIELD && i++ < max) {
     result += (int32_t)(intptr_t)val;

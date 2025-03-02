@@ -30,8 +30,7 @@ void* world(void *arg) {
   return NULL;
 }
 
-int main(void) {
-  fiber_init();
+int prog(int __attribute__((unused)) argc, char** __attribute__((unused)) argv) {
   fiber_result_t status;
   fiber_t hello_fiber = fiber_alloc(hello);
   fiber_t world_fiber = fiber_alloc(world);
@@ -61,6 +60,9 @@ int main(void) {
   fiber_free(hello_fiber);
   fiber_free(world_fiber);
 
-  fiber_finalize();
   return 0;
+}
+
+int main(int argc, char** argv) {
+  return fiber_main(prog, argc, argv);
 }

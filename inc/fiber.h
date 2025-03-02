@@ -35,15 +35,9 @@ export("fiber_resume")
 void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *status);
 
 
-/** Initialises the fiber runtime. It must be called exactly once
-    before using any of the other fiber_* functions. **/
-export("fiber_init")
-void fiber_init(void);
-
-/** Tears down the fiber runtime. It must be called after the final
-    use of any of the other fiber_* functions. **/
-export("fiber_finalize")
-void fiber_finalize(void);
+/** Runs the provided `main` function in a fiber context. **/
+export("fiber_main")
+int fiber_main(int (*main)(int,char**), int, char**);
 
 #undef export
 #endif

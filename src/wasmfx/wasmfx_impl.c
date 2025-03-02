@@ -174,4 +174,11 @@ void fiber_finalize(void) {
 #endif
 }
 
+int fiber_main(int (*main)(int, char**), int argc, char** argv) {
+  fiber_init();
+  int ans = main(argc, argv);
+  fiber_finalize();
+  return ans;
+}
+
 #undef import

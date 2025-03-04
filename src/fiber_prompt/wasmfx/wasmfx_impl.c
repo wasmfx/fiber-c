@@ -76,8 +76,7 @@ extern import("wasmfx_indexed_cont_new") void wasmfx_indexed_cont_new(
 extern import("wasmfx_indexed_resume_with") void* wasmfx_indexed_resume_with(
     uint32_t fiber_index, void* arg, fiber_result_t* result);
 
-extern import("wasmfx_suspend_to") void* wasmfx_suspend_to(void* arg,
-                                                           prompt_t prompt);
+extern import("wasmfx_suspend_to") void* wasmfx_suspend_to(void* arg);
 
 // this should grow both the table and name
 static cont_table_index_t wasmfx_acquire_table_index(void) {
@@ -153,8 +152,8 @@ void* fiber_resume_with(fiber_t fiber, void* arg, fiber_result_t* result) {
   return wasmfx_indexed_resume_with(table_index, arg, result);
 }
 
-void* fiber_yield_to(void* arg, prompt_t prompt) {
-  return wasmfx_suspend_to(arg, prompt);
+void* fiber_yield_to(void* arg) {
+  return wasmfx_suspend_to(arg);
 }
 
 void fiber_init(void) {

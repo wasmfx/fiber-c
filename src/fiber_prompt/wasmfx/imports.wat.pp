@@ -1,9 +1,11 @@
 (module $fiber_wasmfx
   (type $ht (handler (result i32)))
-  (type $ft1 (func (param i32 (ref $ht)) (result i32)))
-  (type $ft2 (func (param i32 i32 (ref $ht)) (result i32)))
+  (type $ft_client (func (param i32) (result i32)))
+  (type $ft1 (func (param i32 (ref null $ht)) (result i32)))
+  (type $ft2 (func (param i32 i32 (ref null $ht)) (result i32)))
+  (type $ft3 (func (param i32 i32 i32 (ref null $ht)) (result i32)))
   (type $ct1 (cont $ft1))
-  (type $ct2 (cont $ft2))
+  (type $ct3 (cont $ft3))
 
   ;; We must make sure that there is only a single memory, so that our
   ;; load/store instructions act on the C heap, not a separate memory.
@@ -17,6 +19,8 @@
 #endif
 
   (global $active_fiber (mut i32) (i32.const 0))
+
+  (table $temp_table 0 funcref)
 
   ;; The *address* where the global C variable sstack_current_ptrs is stored
   ;; in linear memory
@@ -42,31 +46,40 @@
         (param $sstack_current_ptrs_addr i32)
     (global.set $sstack_current_ptrs_addr (local.get $sstack_current_ptrs_addr))
   )
-
-  ;; This function is the entry point of all of our continuations.
-  ;; clang translates function pointers into indices into the
-  ;; `$indirect_function_table`, and the latter contains entries of type
-  ;; `funcref`. There is no way to downcast from `funcref` to a concrete function
-  ;; reference type. Thus we cannot call `cont.new` on entries from
-  ;; `$indirect_function_table` directly, but must use this trampoline instead.
-  (func $wasmfx_entry_trampoline (param $func_index i32) (param $arg i32) (param $name (ref $ht)) (result i32)
-    (call_indirect $indirect_function_table (type $ft1)
+  
+  (func $resume_trampoline (param $func_index i32) (param $arg i32) 
+                            (param $name (ref null $ht)) (result i32)
+    (table.set $names (global.get $active_fiber) (local.get $name))
+    (call_indirect $indirect_function_table (type $ft_client)
       (local.get $arg)
-      (local.get $name)
       (local.get $func_index)
     )
   )
-  (elem declare func $wasmfx_entry_trampoline)
+  (elem declare func $resume_trampoline)
 
+  (func $wasmfx_entry_trampoline (param $trampoline_index i32) (param $func_index i32) (param $arg i32) (param $name (ref null $ht)) (result i32)
+    (call_indirect $temp_table (type $ft2)
+      (local.get $arg)
+      (local.get $func_index)
+      (local.get $name)
+      (local.get $trampoline_index)
+    )
+  )
+  (elem declare func $wasmfx_entry_trampoline)
 
   (func $indexed_cont_new (export "wasmfx_indexed_cont_new")
     (param $func_index i32)
     (param $cont_index i32)
     (local $cont (ref $ct1))
+    (local $trampoline_index i32)
+    
+    (table.grow $temp_table (ref.func $resume_trampoline) (i32.const 1))
+    (local.set $trampoline_index)
 
     (local.get $func_index)
-    (cont.new $ct2 (ref.func $wasmfx_entry_trampoline))
-    (cont.bind $ct2 $ct1)
+    (local.get $trampoline_index)
+    (cont.new $ct3 (ref.func $wasmfx_entry_trampoline))
+    (cont.bind $ct3 $ct1)
     (local.set $cont)
 
     (table.set $conts (local.get $cont_index) (local.get $cont))
@@ -138,12 +151,13 @@
     ;; return suspend payload
     (return)
   )
-
-  (func $suspend_to (export "wasmfx_suspend_to") (param $arg i32) (param $name (ref $ht)) (result i32)
-    (local $updated_name (ref $ht))
-    (table.set $names (global.get $active_fiber) (local.get $name))
-    (suspend_to $ht $yield (local.get $arg) (table.get $names (global.get $active_fiber)))
-    (local.set $updated_name)
-    (table.set $names (global.get $active_fiber) (local.get $updated_name)) ;; update saved name
+  
+  (func $suspend_to (export "wasmfx_suspend_to") (param $arg i32) (result i32)
+   (local $updated_name (ref null $ht))
+   (suspend_to $ht $yield (local.get $arg) (table.get $names (global.get $active_fiber)))
+   (local.set $updated_name)
+   (table.set $names (global.get $active_fiber) (local.get $updated_name))
+   (return)
   )
+  
 )

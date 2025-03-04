@@ -16,6 +16,8 @@
   (import "main" "__stack_pointer" (global $sstack_ptr (mut i32)))
 #endif
 
+  (global $active_fiber (mut i32) (i32.const 0))
+
   ;; The *address* where the global C variable sstack_current_ptrs is stored
   ;; in linear memory
   (global $sstack_current_ptrs_addr (mut i32) (i32.const 0))
@@ -96,11 +98,12 @@
         ;; Retrieve the continuation and test for null
         (local.set $k (br_on_null $on_error
            (table.get $conts (local.get $cont_index))))
+        ;; set active_fiber to store table index for names
+        (global.set $active_fiber (local.get $cont_index))
         ;; resume the continuation
         (resume_with $ct1 (on $yield $handler) (local.get $arg) (local.get $k))
         (i32.store (local.get $result_ptr) (i32.const 0)) ;; FIBER_OK
         (table.set $conts (local.get $cont_index) (ref.null $ct1))
-        (table.set $names (local.get $cont_index) (ref.null $ht))
 
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
         ;; No need to save $sstack_ptr as continuation finished
@@ -137,7 +140,10 @@
   )
 
   (func $suspend_to (export "wasmfx_suspend_to") (param $arg i32) (param $name (ref $ht)) (result i32)
-    (suspend_to $ht $yield (local.get $arg) (local.get $name))
-    (drop)
+    (local $updated_name (ref $ht))
+    (table.set $names (global.get $active_fiber) (local.get $name))
+    (suspend_to $ht $yield (local.get $arg) (table.get $names (global.get $active_fiber)))
+    (local.set $updated_name)
+    (table.set $names (global.get $active_fiber) (local.get $updated_name)) ;; update saved name
   )
 )

@@ -1,11 +1,11 @@
 // An implementation of the fiber_prompt.h interface using wasmfx continuations
-#include <stdint.h>
 #include <stdlib.h>
 
 #include "fiber_prompt.h"
 
-#define import(NAME) \
-  __attribute__((import_module("fiber_prompt_wasmfx_imports"), import_name(NAME)))
+#define import(NAME)                                           \
+  __attribute__((import_module("fiber_prompt_wasmfx_imports"), \
+                 import_name(NAME)))
 
 // Type for indices into the continuation table `$conts` on the Wasm side. In
 // this implementation, we consider `fiber_t` (which is a pointer to an

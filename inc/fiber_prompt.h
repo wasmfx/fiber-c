@@ -2,10 +2,12 @@
 #ifndef WASMFX_FIBER_C_H
 #define WASMFX_FIBER_C_H
 
+#include <stdint.h>
+
 #define export(NAME) __attribute__((export_name(NAME)))
 
 /** The abstract type of a prompt object **/
-typedef struct prompt* prompt_t;
+typedef uint32_t prompt_t;
 
 /** The signature of a fiber entry point. **/
 typedef void* (*fiber_entry_point_t)(void*, prompt_t);
@@ -21,7 +23,7 @@ export("fiber_free") void fiber_free(fiber_t fiber);
 
 /** Yields control to the context of the provided prompt. This function must be
    called from within a fiber context. **/
-export("fiber_yield") void* fiber_yield_to(void* arg, prompt_t prompt);
+export("fiber_yield_to") void* fiber_yield_to(void* arg, prompt_t prompt);
 
 /** Possible status codes for `fiber_resume_with`. **/
 typedef enum { FIBER_OK = 0, FIBER_YIELD = 1, FIBER_ERROR = 2 } fiber_result_t;

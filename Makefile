@@ -76,8 +76,8 @@ treesum_wasmfx.wasm: inc/fiber.h src/fiber/wasmfx/imports.wat src/fiber/wasmfx/w
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" treesum_wasmfx.pre.wasm "main" -o treesum_wasmfx.wasm
 	chmod +x treesum_wasmfx.wasm
 	
-.PHONY: named
-named: hello_named_wasmfx.wasm
+.PHONY: named_hello
+named_hello: hello_named_wasmfx.wasm
 
 hello_named_wasmfx.wasm: inc/fiber_prompt.h src/fiber_prompt/wasmfx/imports.wat src/fiber_prompt/wasmfx/wasmfx_impl.c examples/fiber_prompt/hello.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/fiber_prompt/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/fiber_prompt/hello.c -o hello_named_wasmfx.pre.wasm

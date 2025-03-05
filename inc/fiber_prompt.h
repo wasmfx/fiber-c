@@ -10,7 +10,7 @@
 typedef uint32_t prompt_t;
 
 /** The signature of a fiber entry point. **/
-typedef void* (*fiber_entry_point_t)(void*, prompt_t);
+typedef void* (*fiber_entry_point_t)(prompt_t, void*);
 
 /** The abstract type of a fiber object. **/
 typedef struct fiber* fiber_t;
@@ -23,7 +23,7 @@ export("fiber_free") void fiber_free(fiber_t fiber);
 
 /** Yields control to the context of the provided prompt. This function must be
    called from within a fiber context. **/
-export("fiber_yield_to") void* fiber_yield_to(void* arg);
+export("fiber_yield_to") void* fiber_yield_to(prompt_t prompt, void* arg);
 
 /** Possible status codes for `fiber_resume_with`. **/
 typedef enum { FIBER_OK = 0, FIBER_YIELD = 1, FIBER_ERROR = 2 } fiber_result_t;

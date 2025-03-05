@@ -56,8 +56,6 @@ dkms.conf
 \#*
 
 # Ignore generated files
-src/wasmfx/imports.wat
-
-# Generated files 
+src/*/imports.wat
 *.cwasm
 .vscode

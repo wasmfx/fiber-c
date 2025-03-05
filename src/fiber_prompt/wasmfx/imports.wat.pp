@@ -1,11 +1,10 @@
 (module $fiber_wasmfx
   (type $ht (handler (result i32)))
-  (type $ft_client (func (param i32) (result i32)))
+  (type $ft_client (func (param i32 i32) (result i32)))
   (type $ft1 (func (param i32 (ref null $ht)) (result i32)))
-  (type $ft2 (func (param i32 i32 (ref null $ht)) (result i32)))
-  (type $ft3 (func (param i32 i32 i32 (ref null $ht)) (result i32)))
+  (type $ft2 (func (param i32 i32 i32 (ref null $ht)) (result i32)))
   (type $ct1 (cont $ft1))
-  (type $ct3 (cont $ft3))
+  (type $ct3 (cont $ft2))
 
   ;; We must make sure that there is only a single memory, so that our
   ;; load/store instructions act on the C heap, not a separate memory.
@@ -17,10 +16,6 @@
   ;; The shadow stack pointer, created by clang
   (import "main" "__stack_pointer" (global $sstack_ptr (mut i32)))
 #endif
-
-  (global $active_fiber (mut i32) (i32.const 0))
-
-  (table $temp_table 0 funcref)
 
   ;; The *address* where the global C variable sstack_current_ptrs is stored
   ;; in linear memory
@@ -45,24 +40,22 @@
   (func $wasmfx_fiber_init_wat (export "wasmfx_fiber_init_wat")
         (param $sstack_current_ptrs_addr i32)
     (global.set $sstack_current_ptrs_addr (local.get $sstack_current_ptrs_addr))
-  )
-  
-  (func $resume_trampoline (param $func_index i32) (param $arg i32) 
-                            (param $name (ref null $ht)) (result i32)
-    (table.set $names (global.get $active_fiber) (local.get $name))
+  )  
+ 
+  ;; This function is the entry point of all of our continuations.
+  ;; clang translates function pointers into indices into the
+  ;; `$indirect_function_table`, and the latter contains entries of type
+  ;; `funcref`. There is no way to downcast from `funcref` to a concrete function
+  ;; reference type. Thus we cannot call `cont.new` on entries from
+  ;; `$indirect_function_table` directly, but must use this trampoline instead. 
+  (func $wasmfx_entry_trampoline (param $func_index i32) (param $hname_idx i32) 
+                                 (param $arg i32) (param $hname (ref null $ht)) 
+                                 (result i32)
+    (table.set $names (local.get $hname_idx) (local.get $hname))
     (call_indirect $indirect_function_table (type $ft_client)
+      (local.get $hname_idx)
       (local.get $arg)
       (local.get $func_index)
-    )
-  )
-  (elem declare func $resume_trampoline)
-
-  (func $wasmfx_entry_trampoline (param $trampoline_index i32) (param $func_index i32) (param $arg i32) (param $name (ref null $ht)) (result i32)
-    (call_indirect $temp_table (type $ft2)
-      (local.get $arg)
-      (local.get $func_index)
-      (local.get $name)
-      (local.get $trampoline_index)
     )
   )
   (elem declare func $wasmfx_entry_trampoline)
@@ -72,15 +65,12 @@
     (param $cont_index i32)
     (local $cont (ref $ct1))
     (local $trampoline_index i32)
-    
-    (table.grow $temp_table (ref.func $resume_trampoline) (i32.const 1))
-    (local.set $trampoline_index)
 
-    (local.get $func_index)
-    (local.get $trampoline_index)
-    (cont.new $ct3 (ref.func $wasmfx_entry_trampoline))
-    (cont.bind $ct3 $ct1)
-    (local.set $cont)
+    (local.set $cont
+      (cont.bind $ct3 $ct1
+        (local.get $func_index)
+        (local.get $cont_index) ;; note: 1-1 between conts table and names table
+        (cont.new $ct3 (ref.func $wasmfx_entry_trampoline))))
 
     (table.set $conts (local.get $cont_index) (local.get $cont))
   )
@@ -111,8 +101,6 @@
         ;; Retrieve the continuation and test for null
         (local.set $k (br_on_null $on_error
            (table.get $conts (local.get $cont_index))))
-        ;; set active_fiber to store table index for names
-        (global.set $active_fiber (local.get $cont_index))
         ;; resume the continuation
         (resume_with $ct1 (on $yield $handler) (local.get $arg) (local.get $k))
         (i32.store (local.get $result_ptr) (i32.const 0)) ;; FIBER_OK
@@ -152,12 +140,16 @@
     (return)
   )
   
-  (func $suspend_to (export "wasmfx_suspend_to") (param $arg i32) (result i32)
-   (local $updated_name (ref null $ht))
-   (suspend_to $ht $yield (local.get $arg) (table.get $names (global.get $active_fiber)))
-   (local.set $updated_name)
-   (table.set $names (global.get $active_fiber) (local.get $updated_name))
-   (return)
+  ;; We retrieve the handler name from its index into the $names table, 
+  ;; where the index was saved during $wasmfx_entry_trampoline. 
+  ;; We are sure to update the name in $names after the call to suspend_to. 
+  (func $suspend_to (export "wasmfx_suspend_to") (param $hname_idx i32) 
+                                                 (param $arg i32) (result i32)
+    (local $updated_name (ref null $ht))
+    (suspend_to $ht $yield (local.get $arg) (table.get $names (local.get $hname_idx)))
+    (local.set $updated_name)
+    (table.set $names (local.get $hname_idx) (local.get $updated_name))
+    (return)
   )
   
 )

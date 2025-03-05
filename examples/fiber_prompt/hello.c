@@ -6,30 +6,26 @@
 #include <stdio.h>
 #include <string.h>
 
-void* hello(void* arg, prompt_t prompt) {
-  (void) arg; 
-  (void) prompt;
-  // static const char s[] = "hlowrd";
-  // uint32_t i = (uint32_t)(uintptr_t)arg;
+void* hello(prompt_t prompt, void* arg) {
+  static const char s[] = "hlowrd";
+  uint32_t i = (uint32_t)(uintptr_t)arg;
 
-  // while (i < strlen(s)) {
-  //   putc(s[i], stdout);
-  //   i = (uint32_t)(uintptr_t)fiber_yield_to(NULL, prompt);
-  // }
+  while (i < strlen(s)) {
+    putc(s[i], stdout);
+    i = (uint32_t)(uintptr_t)fiber_yield_to(prompt, NULL);
+  }
 
   return NULL;
 }
 
-void* world(void* arg, prompt_t prompt) {
-  (void) arg; 
-  (void) prompt;
-  // static const char s[] = "el ol";
-  // uint32_t i = (uint32_t)(uintptr_t)arg;
+void* world(prompt_t prompt, void* arg) {
+  static const char s[] = "el ol";
+  uint32_t i = (uint32_t)(uintptr_t)arg;
 
-  // while (i < strlen(s)) {
-  //   putc(s[i], stdout);
-  //   i = (uint32_t)(uintptr_t)fiber_yield_to(NULL, prompt);
-  // }
+  while (i < strlen(s)) {
+    putc(s[i], stdout);
+    i = (uint32_t)(uintptr_t)fiber_yield_to(prompt, NULL);
+  }
 
   return NULL;
 }

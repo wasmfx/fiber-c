@@ -13,21 +13,15 @@
 // between the two.
 typedef uintptr_t cont_table_index_t;
 
-// Type for indices into the name table `$anmes` on the Wasm side. In
-// this implementation, we consider `prompt_t` (which is a pointer to an
-// incomplete type) to be equivalent to `name_table_index_t` and freely convert
-// between the two.
-typedef uintptr_t name_table_index_t;
-
-// Initial size of the `$conts` table. Keep this value in sync with the
-// corresponding (table ...) definition.
+// Initial size of the `$conts` and `$names` table.
+// Keep this value in sync with the corresponding (table ...) definition.
 static const uint32_t initial_table_capacity =
     WASMFX_CONT_TABLE_INITIAL_CAPACITY;
 
-// The current capacity of the `$conts` table.
+// The current capacity of the `$conts` and `$names` table.
 static uint32_t cont_table_capacity = initial_table_capacity;
-// Number of entries at the end of `$conts` table that we haven't used so
-// far.
+// Number of entries at the end of `$conts` or `$names`
+// table that we haven't used so far.
 // Invariant:
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity`
 static uint32_t cont_table_unused_size = initial_table_capacity;
@@ -68,6 +62,7 @@ static void init_shadow_stack(cont_table_index_t table_index) {
 extern import("wasmfx_fiber_init_wat") void wasmfx_fiber_init_wat(
     void* sstack_current_ptrs_addr);
 
+// These grows both the `$names` and `$conts` tables
 extern import("wasmfx_grow_tables") void wasmfx_grow_tables(uint32_t);
 
 extern import("wasmfx_indexed_cont_new") void wasmfx_indexed_cont_new(
@@ -76,9 +71,9 @@ extern import("wasmfx_indexed_cont_new") void wasmfx_indexed_cont_new(
 extern import("wasmfx_indexed_resume_with") void* wasmfx_indexed_resume_with(
     uint32_t fiber_index, void* arg, fiber_result_t* result);
 
-extern import("wasmfx_suspend_to") void* wasmfx_suspend_to(void* arg);
+extern import("wasmfx_suspend_to") void* wasmfx_suspend_to(prompt_t prompt,
+                                                           void* arg);
 
-// this should grow both the table and name
 static cont_table_index_t wasmfx_acquire_table_index(void) {
   uintptr_t table_index;
   if (cont_table_unused_size > 0) {
@@ -152,8 +147,9 @@ void* fiber_resume_with(fiber_t fiber, void* arg, fiber_result_t* result) {
   return wasmfx_indexed_resume_with(table_index, arg, result);
 }
 
-void* fiber_yield_to(void* arg) {
-  return wasmfx_suspend_to(arg);
+// a prompt is provided to a fiber entry point function upon fiber_resume_with
+void* fiber_yield_to(prompt_t prompt, void* arg) {
+  return wasmfx_suspend_to(prompt, arg);
 }
 
 void fiber_init(void) {

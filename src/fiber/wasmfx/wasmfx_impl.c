@@ -76,10 +76,8 @@ void* wasmfx_indexed_resume(uint32_t fiber_index, void *arg, fiber_result_t *res
 
 extern
 import("wasmfx_suspend")
-
 void* wasmfx_suspend(void *arg);
 
-// this should grow both the table and name 
 static cont_table_index_t wasmfx_acquire_table_index(void) {
   uintptr_t table_index;
   if (cont_table_unused_size > 0) {

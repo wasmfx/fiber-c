@@ -6,7 +6,8 @@
 
 
 void* sum(void *arg) {
-  int32_t max = (int32_t)(intptr_t)arg;
+  int32_t max = 0;
+  max = (int32_t)(intptr_t)arg;
   for (int32_t i = 0; i < max; i++) {
     fiber_yield((void*)(intptr_t)i);
   }
@@ -45,5 +46,5 @@ int prog(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-  return fiber_main(prog, argc, argv);
+  return (int)fiber_main(prog, argc, argv);
 }

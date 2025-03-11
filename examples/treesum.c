@@ -70,12 +70,11 @@ int32_t run(node_t* tree) {
   return sum;
 }
 
-int main(int argc, char** argv) {
+int prog(int argc, char** argv) {
   if (argc != 2) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return -1;
   }
-  fiber_init();
 
   int i = atoi(argv[1]);
   node_t *tree = build_tree((int32_t)i, 0);
@@ -86,6 +85,9 @@ int main(int argc, char** argv) {
 
   printf("%d\n", result);
 
-  fiber_finalize();
   return 0;
+}
+
+int main(int argc, char** argv) {
+  return fiber_main(prog, argc, argv);
 }

@@ -6,7 +6,8 @@
 
 
 void* sum(void *arg) {
-  int32_t max = (int32_t)(intptr_t)arg;
+  int32_t max = 0;
+  max = (int32_t)(intptr_t)arg;
   for (int32_t i = 0; i < max; i++) {
     fiber_yield((void*)(intptr_t)i);
   }
@@ -29,12 +30,11 @@ int32_t run(int32_t max) {
   return result;
 }
 
-int main(int argc, char** argv) {
+int prog(int argc, char** argv) {
   if (argc != 2) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return -1;
   }
-  fiber_init();
 
   int i = atoi(argv[1]);
 
@@ -42,6 +42,9 @@ int main(int argc, char** argv) {
 
   printf("%d\n", result);
 
-  fiber_finalize();
   return 0;
+}
+
+int main(int argc, char** argv) {
+  return (int)fiber_main(prog, argc, argv);
 }

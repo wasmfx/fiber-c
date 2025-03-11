@@ -34,7 +34,7 @@ static void print_input_error_and_exit(void) {
   exit(1);
 }
 
-int main(int argc, char **argv) {
+int prog(int argc, char **argv) {
   if (argc != 2) {
     printf("usage: %s <n>\n", argv[0]);
     exit(1);
@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
   uint32_t p = 0;                         // number of primes computed so far.
   int32_t i = 2;                          // the current candidate prime number.
 
-  fiber_init();
   fiber_t *filters = (fiber_t*)malloc(sizeof(fiber_t) * max_primes);
   fiber_result_t status;
 
@@ -91,7 +90,10 @@ int main(int argc, char **argv) {
     fiber_free(filters[i]);
   }
   free(filters);
-  fiber_finalize();
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  return fiber_main(prog, argc, argv);
 }

@@ -4,9 +4,9 @@ WASMFX_CONT_TABLE_INITIAL_CAPACITY?=1024
 WASMFX_PRESERVE_SHADOW_STACK?=1
 # Only relevant if WASMFX_PRESERVE_SHADOW_STACK is 1
 WASMFX_CONT_SHADOW_STACK_SIZE?=65536
-ASYNCIFY=../binaryen/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 --asyncify
+ASYNCIFY=../binaryen/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 -g --asyncify --no-inline="fiber_yield,fiber_yield_to,fiber_resume,fiber_resume_with"
 WASICC=../benchfx/wasi-sdk-22.0/bin/clang
-WASIFLAGS=--sysroot=../benchfx/wasi-sdk-22.0/share/wasi-sysroot -std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes -O3 -I inc
+WASIFLAGS=-g --sysroot=../benchfx/wasi-sdk-22.0/share/wasi-sysroot -std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes -O0 -I inc
 WASM_INTERP=../spec/interpreter/wasm
 WASM_MERGE=../binaryen/bin/wasm-merge --enable-multimemory --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching
 
@@ -20,7 +20,7 @@ endif
 all: hello sieve itersum treesum
 
 .PHONY: hello
-hello: hello_asyncify.wasm hello_wasmfx.wasm
+hello: hello_asyncify.wasm hello_wasmfx.wasm hello_prompt_asyncify.wasm hello_forward_prompt_asyncify.wasm
 
 hello_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/hello.c
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/hello.c -o hello_asyncfiy.pre.wasm
@@ -32,6 +32,17 @@ hello_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c e
 	$(WASM_INTERP) -d -i src/wasmfx/imports.wat -o fiber_wasmfx_imports.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" hello_wasmfx.pre.wasm "main" -o hello_wasmfx.wasm
 	chmod +x hello_wasmfx.wasm
+
+hello_prompt_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_prompt_impl.c examples/prompt/hello.c
+	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_prompt_impl.c $(WASIFLAGS) examples/prompt/hello.c -o hello_prompt_asyncfiy.pre.wasm
+	$(ASYNCIFY) hello_prompt_asyncfiy.pre.wasm -o hello_prompt_asyncify.wasm
+	chmod +x hello_prompt_asyncify.wasm
+
+hello_forward_prompt_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_prompt_impl.c examples/prompt/hello_forward.c
+	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_prompt_impl.c $(WASIFLAGS) examples/prompt/hello_forward.c -o hello_forward_prompt_asyncfiy.pre.wasm
+	$(ASYNCIFY) hello_forward_prompt_asyncfiy.pre.wasm -o hello_forward_prompt_asyncify.wasm
+	chmod +x hello_forward_prompt_asyncify.wasm
+
 
 .PHONY: sieve
 sieve: sieve_asyncify.wasm sieve_wasmfx.wasm

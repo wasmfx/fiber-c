@@ -34,8 +34,12 @@ node_t* build_tree(int32_t depth, int32_t val) {
 void free_tree(node_t *node) {
   enum { LEAF, FORK } tag = node->tag;
   if (tag == FORK) {
-    free_tree(node->left);
-    free_tree(node->right);
+    if (node->left == node->right) {
+      free_tree(node->left);
+    } else {
+      free_tree(node->left);
+      free_tree(node->right);
+    }
   }
   free(node);
 }

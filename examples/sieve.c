@@ -35,17 +35,20 @@ static void print_input_error_and_exit(void) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    printf("usage: %s <n>\n", argv[0]);
+  if (argc < 2 || argc > 3) {
+    printf("usage: %s [-q] <n>\n", argv[0]);
     exit(1);
   }
 
-  if (!sanitise_input_number(argv[1])) {
+  size_t n_idx = argc == 2 ? 1 : 2;
+  bool quiet = argc == 3 && strcmp(argv[1], "-q") == 0;
+
+  if (!sanitise_input_number(argv[n_idx])) {
     print_input_error_and_exit();
   }
 
   errno = 0;
-  long int result = strtol(argv[1], NULL, 10 /* base 10 */);
+  long int result = strtol(argv[n_idx], NULL, 10 /* base 10 */);
   if (result <= 0 && (errno == ERANGE || errno == EINVAL || result > MAX_PRIMES_LIMIT)) {
     print_input_error_and_exit();
   }
@@ -65,14 +68,16 @@ int main(int argc, char **argv) {
       if (divisible) break;
     }
     if (!divisible) {
-      char sbuf[11]; // 10 digits + null character.
-      int32_t len = snprintf(sbuf, sizeof(sbuf), "%" PRId32 " ", i);
-      if (len < 1) {
-        fprintf(stderr, "error: failed to convert int32_t to a string\n");
-        abort();
-      }
-      for (int32_t i = 0; i < len; i++) {
-        putc(sbuf[i], stdout);
+      if (!quiet) {
+        char sbuf[11]; // 10 digits + null character.
+        int32_t len = snprintf(sbuf, sizeof(sbuf), "%" PRId32 " ", i);
+        if (len < 1) {
+          fprintf(stderr, "error: failed to convert int32_t to a string\n");
+          abort();
+        }
+        for (int32_t i = 0; i < len; i++) {
+          putc(sbuf[i], stdout);
+        }
       }
       fiber_t filter_fiber = fiber_alloc((fiber_entry_point_t)(void*)filter);
       (void)fiber_resume(filter_fiber, (void*)(intptr_t)i, &status);
@@ -81,7 +86,9 @@ int main(int argc, char **argv) {
     }
     i++;
   }
-  putc('\n', stdout);
+  if (!quiet) {
+    putc('\n', stdout);
+  }
 
   assert(p == max_primes);
   // Clean up

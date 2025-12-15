@@ -20,18 +20,12 @@ endif
 all: hello sieve itersum treesum
 
 .PHONY: hello
-hello: hello_asyncify.wasm hello_asyncify_switch.wasm hello_wasmfx.wasm
+hello: hello_asyncify.wasm hello_wasmfx.wasm
 
 hello_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/hello.c
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/hello.c -o hello_asyncfiy.pre.wasm
 	$(ASYNCIFY) hello_asyncfiy.pre.wasm -o hello_asyncify.wasm
 	chmod +x hello_asyncify.wasm
-
-# new stuff: build with switch
-hello_asyncify_switch.wasm: inc/fiber-switch.h src/asyncify/asyncify_switch_impl.c examples/hello_switch.c
-	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_switch_impl.c $(WASIFLAGS) examples/hello_switch.c -o hello_asyncfiy_switch.pre.wasm
-	$(ASYNCIFY) hello_asyncfiy_switch.pre.wasm -o hello_asyncify_switch.wasm
-	chmod +x hello_asyncify_switch.wasm
 
 hello_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c examples/hello.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/hello.c -o hello_wasmfx.pre.wasm

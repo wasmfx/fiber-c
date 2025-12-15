@@ -148,22 +148,6 @@ void fiber_free(fiber_t fiber) {
   free(fiber);
 }
 
-// Yields control from within a fiber computation to whichever point
-// originally resumed the fiber.
-__attribute__((noinline))
-void* fiber_yield(void *arg) {
-  if (active_fiber->state == YIELDING) {
-    asyncify_stop_rewind();
-    active_fiber->state = ACTIVE;
-    return active_fiber->arg;
-  } else {
-    active_fiber->arg = arg;
-    active_fiber->state = YIELDING;
-    asyncify_start_unwind(&active_fiber->stack);
-    return NULL; // dummy value; this statement never gets executed.
-  }
-}
-
 // Resumes a given fiber. Control is transferred to the fiber.
 __attribute__((noinline))
 void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
@@ -189,9 +173,11 @@ void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
   // Run the entry function. Note: the entry function must be run
   // first both when the fiber is started and resumed!
   void *fiber_result = fiber->entry(arg);
-  printf("fiber_resume: fiber entry executed successfully, stopping unwind\n");
+
   // The following function delimits the effects of fiber_yield.
   asyncify_stop_unwind();
+
+  //printf("fiber_resume: fiber returned to caller\n");
   // Check whether the fiber finished or suspended.
   if (fiber->state != YIELDING)
     fiber->state = DONE;
@@ -219,44 +205,35 @@ void* fiber_switch(fiber_t fiber, void *arg, fiber_result_t *result) {
     return NULL;
   }
 
-  // If the active fiber is yielding, stop the rewind.
-  if (active_fiber->state == YIELDING) {
-    printf("fiber_switch: active fiber is YIELDING, stopping rewind\n");
-    asyncify_stop_rewind();
-    active_fiber->state = ACTIVE;
-    return active_fiber->arg;
-  } 
-
-  // Otherwise, set the argument buffer and start unwinding.
+  // Otherwise, set the argument buffer, yield from current fiber, and start unwinding.
   active_fiber->arg = arg;
   active_fiber->state = YIELDING;
 
-  // problem: this *should* be the right place to start unwinding, but 
-  // the following line breaks everything
+  // Note: it appears that every start_unwind needs to be immediately followed by a stop_unwind,
+  //       otherwise it crashes. This behaviour wasn't obvious to me and isn't documented anywhere.
+  //       Not sure if the following lines are correct, but it gets my test program working.
   asyncify_start_unwind(&active_fiber->stack);
-  
-  // we don't reach anything from here onwards because asyncify_start_unwind does something I don't understand
-  // also, everything from here onwards is copied from fiber_resume
-  printf("fiber_switch: active fiber is now YIELDING, starting unwind\n");
+  asyncify_stop_unwind();
+
+  // Remember the currently executing fiber.
   volatile fiber_t prev = active_fiber;
 
   // Set the given fiber as the actively executing fiber.
   active_fiber = fiber;
+
   // If we are resuming a suspended fiber...
   if (fiber->state == YIELDING) {
-    printf("fiber_switch: passed fiber is YIELDING, starting rewind\n");
     // ... then update the argument buffer.
     fiber->arg = arg;
     // ... and initiate the stack rewind.
+    // Note: like above, it appears that every start_rewind needs to be immediately followed by a stop_rewind,
+    //       No idea if this is correct either.
     asyncify_start_rewind(&fiber->stack);
-    
+    asyncify_stop_rewind();
+    active_fiber->state = ACTIVE;
   }
 
   void *fiber_result = fiber->entry(arg);
-  printf("fiber_switch: fiber entry executed successfully, stopping unwind\n");
-
-   // The following function delimits the effects of fiber_yield.
-  asyncify_stop_unwind();
 
   // Check whether the fiber finished or suspended.
   if (fiber->state != YIELDING) fiber->state = DONE;

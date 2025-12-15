@@ -24,7 +24,6 @@ void* hello(void *arg) {
   if (!hello_done){
     while (i < strlen(s)) {
       putc(s[i], stdout);
-      // printf("hello resumed with status %d\n", status);
       i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &status);
       if (status == FIBER_OK) hello_done = true;
     }
@@ -36,7 +35,6 @@ void* hello(void *arg) {
 void* world(void *arg) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
   static const char s[] = "el ol";
-  printf("world resumed with status %d\n", status);
 
   if (!world_done) {
     putc(s[i], stdout);
@@ -44,7 +42,6 @@ void* world(void *arg) {
     i = (uint32_t)(uintptr_t)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &status);
     if (status == FIBER_OK) world_done = true;
   }
-  printf("world finished\n");
 
   return NULL;
 }
@@ -64,7 +61,6 @@ int main(void) {
 
   putc('\n', stdout);
   fflush(stdout);
-  printf("main finished\n");
 
   fiber_free(hello_fiber);
   fiber_free(world_fiber);

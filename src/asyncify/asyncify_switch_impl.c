@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "fiber-switch.h"
+#include "fiber_switch.h"
 #define import(NAME) __attribute__((import_module("asyncify"),import_name(NAME)))
 
 

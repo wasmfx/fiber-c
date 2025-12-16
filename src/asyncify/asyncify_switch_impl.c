@@ -148,51 +148,6 @@ void fiber_free(fiber_t fiber) {
   free(fiber);
 }
 
-// Resumes a given fiber. Control is transferred to the fiber.
-__attribute__((noinline))
-void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
-  // If we are done, signal error and return.
-  if (fiber->state == DONE) {
-    *result = FIBER_ERROR;
-    return NULL;
-  }
-
-  // Remember the currently executing fiber.
-  volatile fiber_t prev = active_fiber;
-  // Set the given fiber as the actively executing fiber.
-  active_fiber = fiber;
-
-  // If we are resuming a suspended fiber...
-  if (fiber->state == YIELDING) {
-    // ... then update the argument buffer.
-    fiber->arg = arg;
-    // ... and initiate the stack rewind.
-    asyncify_start_rewind(&fiber->stack);
-  }
-
-  // Run the entry function. Note: the entry function must be run
-  // first both when the fiber is started and resumed!
-  void *fiber_result = fiber->entry(arg);
-
-  // The following function delimits the effects of fiber_yield.
-  asyncify_stop_unwind();
-
-  //printf("fiber_resume: fiber returned to caller\n");
-  // Check whether the fiber finished or suspended.
-  if (fiber->state != YIELDING)
-    fiber->state = DONE;
-
-  // Restore the previously executing fiber.
-  active_fiber = prev;
-  // Signal success.
-  if (fiber->state == YIELDING) {
-    *result = FIBER_YIELD;
-    return fiber->arg;
-  } else {
-    *result = FIBER_OK;
-    return fiber_result;
-  }
-}
 
 // Switches to a given fiber, transferring control to it.
 __attribute__((noinline))

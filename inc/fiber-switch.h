@@ -18,27 +18,16 @@ fiber_t fiber_alloc(fiber_entry_point_t entry);
 export("fiber_free")
 void fiber_free(fiber_t fiber);
 
-/** Yields control to its parent context. This function must be called
-    from within a fiber context. **/
-export("fiber_yield")
-void* fiber_yield(void *arg);
 
 /** Possible status codes for `fiber_switch`. **/
-typedef enum { FIBER_OK = 0, FIBER_YIELD = 1, FIBER_ERROR = 2 } fiber_result_t;
+typedef enum { FIBER_OK = 0, FIBER_SWITCH = 1, FIBER_ERROR = 2 } fiber_result_t;
 
-/** Resumes a given `fiber` with argument `arg`, returning some value
-    of type `void*`. The output parameter `status` indicates whether
-    the fiber ran to completion (`FIBER_OK`), yielded control
-    (`FIBER_YIELD`), or failed (`FIBER_ERROR`), in the latter case the
-    return value will always be `NULL`. **/
-export("fiber_resume")
-void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *status);
 
 /** Switches to a given `fiber` with argument `arg`, returning some value
     of type `void*`. The output parameter `status` indicates whether
     the fiber ran to completion (`FIBER_OK`), yielded control
     (`FIBER_YIELD`), or failed (`FIBER_ERROR`), in the latter case the
-    return value will always be `NULL`. **/
+    return value will be undefined. **/
 export("fiber_switch")
 void* fiber_switch(fiber_t fiber, void *arg, fiber_result_t *status);
 

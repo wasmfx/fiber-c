@@ -263,10 +263,6 @@ void *fiber_main(void *(*main)(void*), void* arg) {
       active_fiber = active_fiber->fiber_arg;
     }
     
-    // If the main fiber is done, we're finished (I'm not too sure about this)
-    if (main_fiber->state == DONE) {
-      break;
-    }
   }
 
   // When no active fiber or target is done, we're finished

@@ -44,6 +44,8 @@ static const size_t default_stack_size = ASYNCIFY_DEFAULT_STACK_SIZE;
 static volatile fiber_t active_fiber = NULL;
 // The target fiber to switch to.
 static volatile fiber_t target_fiber = NULL;
+// The main fiber of the user program.
+static volatile fiber_t main_fiber = NULL;
 
 // Global variable tracking if we're in the very first switch
 // static volatile bool first_switch = false;
@@ -159,8 +161,8 @@ void fiber_free(fiber_t fiber) {
 }
 
 __attribute__((noinline))
-fiber_t get_active_fiber(void) {
-  return active_fiber;
+fiber_t get_main_fiber(void) {
+  return main_fiber;
 }
 
 __attribute__((noinline))
@@ -231,7 +233,7 @@ void *fiber_main(void *(*main)(void*), void* arg) {
   fiber_init();
 
   // Allocate the main fiber (running the initial function of our program)
-  fiber_t main_fiber = fiber_alloc(main);
+  main_fiber = fiber_alloc(main);
   active_fiber = main_fiber;
   active_fiber->arg = arg;
 
@@ -261,9 +263,13 @@ void *fiber_main(void *(*main)(void*), void* arg) {
     } else {
       assert(active_fiber->state == YIELDING);
       // Prepare the target
-      target = active_fiber->target;
+      active_fiber = target_fiber;
     }
-    
+
+    // If the target is also done, clear it so that we can exit the loop
+    if (target_fiber->state == DONE) {
+      target_fiber = NULL;
+    }
   }
 
   // When no active fiber or target is done, we're finished

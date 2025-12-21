@@ -24,11 +24,10 @@ void* hello(void *arg) {
   static const char s[] = "hlowrd";
 
   while (!world_done) {
-    if (i < 6) {
-      putc(s[i], stdout);
-      i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &hello_fiber);
-    } 
+    putc(s[i], stdout);
+    i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &hello_fiber);
   }
+
   hello_done = true;
   fiber_switch(main_fiber, (void*)(uintptr_t)i, &hello_fiber);
   return NULL;
@@ -44,6 +43,7 @@ void* world(void *arg) {
     i = (uint32_t)(uintptr_t)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
   }
   world_done = true;
+  fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
   return NULL;
 }
 
@@ -51,7 +51,7 @@ void *prog(void * __attribute__((unused))result) {
 
   hello_fiber = fiber_alloc(hello);
   world_fiber = fiber_alloc(world);
-  main_fiber = get_active_fiber();
+  main_fiber = get_main_fiber();
 
   hello_done = false;
   world_done = false;

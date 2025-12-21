@@ -36,9 +36,9 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t *switched_from);
 export("fiber_main")
 void *fiber_main(void *(*main)(void*), void* arg);
 
-/** trying stuff */
-export("get_active_fiber")
-fiber_t get_active_fiber(void);
+/** Gets the fiber running the main function of the user program. */
+export("get_main_fiber")
+fiber_t get_main_fiber(void);
 
 #undef export
 #endif

@@ -258,12 +258,6 @@ void *fiber_main(void *(*main)(void*), void* arg) {
     // If the active fiber isn't yielding at this point, it should be done
     if (active_fiber->state != YIELDING){
       active_fiber->state = DONE;
-      // Restart the fiber we just switched from, if it's yielding
-      if (active_fiber->fiber_arg->state == YIELDING){
-        active_fiber = active_fiber->fiber_arg;
-        active_fiber->state = ACTIVE;
-        target_fiber = NULL;
-      }
     } else {
       // Restore the previously executing fiber.
       active_fiber = active_fiber->fiber_arg;

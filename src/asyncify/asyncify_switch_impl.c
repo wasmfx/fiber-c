@@ -259,8 +259,9 @@ void *fiber_main(void *(*main)(void*), void* arg) {
     if (active_fiber->state != YIELDING){
       active_fiber->state = DONE;
     } else {
-      // Restore the previously executing fiber.
-      active_fiber = active_fiber->fiber_arg;
+      assert(active_fiber->state == YIELDING);
+      // Prepare the target
+      target = active_fiber->target;
     }
     
   }

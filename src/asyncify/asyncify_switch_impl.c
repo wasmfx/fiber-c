@@ -23,7 +23,7 @@
 //  reinstatement.
 extern
 import("start_unwind")
-void asyncify_start_unwind(void*);
+void asyncify_start_unwind (void*);
 
 extern
 import("stop_unwind")
@@ -31,7 +31,7 @@ void asyncify_stop_unwind(void);
 
 extern
 import("start_rewind")
-void asyncify_start_rewind(void*);
+void asyncify_start_rewind (void*);
 
 extern
 import("stop_rewind")
@@ -54,8 +54,9 @@ static volatile fiber_t main_fiber = NULL;
 // Fiber states:
 // * ACTIVE: the fiber is actively executing.
 // * YIELDING: the fiber is suspended.
+// * RETURN_SWITCHING: the fiber is being switched from and destroyed.
 // * DONE: the fiber is finished (i.e. run to completion).
-typedef enum { ACTIVE, YIELDING, DONE } fiber_state_t;
+typedef enum { ACTIVE, YIELDING, RETURN_SWITCHING, DONE } fiber_state_t;
 
 // A fiber stack is an asyncify stack, i.e. a reserved area of memory
 // for asyncify to store the call chain and locals. Note: asyncify
@@ -165,20 +166,28 @@ fiber_t get_main_fiber(void) {
   return main_fiber;
 }
 
+// Some checks we do on a target fiber before switching to it
+bool target_fiber_valid(fiber_t fiber) {
+  // don't switch to a done or null fiber
+  if (fiber->state == DONE || fiber == NULL) {
+    printf("fiber_switch: error: switching to done or null fiber %p\n", (void*)fiber);
+    return false;
+  }
+
+  // don't switch to yourself
+  if (fiber == active_fiber) {
+    printf("fiber_switch: error: switching to self %p\n", (void*)fiber);
+    asyncify_start_unwind(&active_fiber->stack);
+    return false;
+  }
+
+  return true;
+}
+
 __attribute__((noinline))
 void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((unused))switched_from) {
 
-  if (fiber->state == DONE || fiber == NULL) {
-    printf("fiber_switch: error: switching to done or null fiber %p\n", (void*)fiber);
-    return NULL;
-  }
-
-  if (fiber == active_fiber) {
-    // Switch to self?
-    printf("fiber_switch: error: switching to self %p\n", (void*)fiber);
-    asyncify_start_unwind(&active_fiber->stack);
-    return NULL;
-  }
+  if (!target_fiber_valid(fiber)) return NULL;
    
   if (active_fiber->state == ACTIVE) {
     // We are switching from this fiber to `fiber`.
@@ -200,6 +209,25 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((u
     // Note(dhil): need to be a bit careful here to make sure `fiber` is correctly updated, probably needs to be a pointer-to-a-pointer to be correct.
     return active_fiber->arg;
   }
+}
+
+/** Switches to `target` and destroys currently executing `fiber`. **/
+__attribute__((noinline))
+void fiber_return_switch(fiber_t fiber, void *arg) {
+
+  if (!target_fiber_valid(fiber)) exit(1);
+
+  // We switch from this fiber to `fiber` and destroy it!
+  // Start by doing the normal things
+  target_fiber = fiber;
+  // Save payload on target fiber.
+  target_fiber->arg = arg;
+  // Wipe the fiber arg for the target, since we're destroying it.
+  target_fiber->fiber_arg = NULL;
+  // Change fiber status to RETURN_SWITCHING, which tells fiber_main to destroy it
+  active_fiber->state = RETURN_SWITCHING;
+  // Start unwinding.
+  asyncify_start_unwind(&active_fiber->stack);
 }
 
 // Noop when stack pooling is disabled.
@@ -258,14 +286,18 @@ void *fiber_main(void *(*main)(void*), void* arg) {
     asyncify_stop_unwind();
 
     // If the active fiber isn't yielding at this point, it should be done
-    if (active_fiber->state != YIELDING){
-      active_fiber->state = DONE;
-    } else {
-      assert(active_fiber->state == YIELDING);
+    if (active_fiber->state == YIELDING){
       // Prepare the target
       active_fiber = target_fiber;
+    } else if (active_fiber->state == RETURN_SWITCHING) {
+      // Destroy the active fiber
+      fiber_free(active_fiber);
+      // Set the target
+      active_fiber = target_fiber;
     }
-
+      else {
+      active_fiber->state = DONE;
+    }
     // If the target is also done, clear it so that we can exit the loop
     if (target_fiber->state == DONE) {
       target_fiber = NULL;

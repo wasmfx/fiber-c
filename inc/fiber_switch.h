@@ -31,6 +31,9 @@ typedef enum { FIBER_OK = 0, FIBER_SWITCH = 1, FIBER_ERROR = 2 } fiber_result_t;
 export("fiber_switch")
 void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t *switched_from);
 
+/** Switches to `target` and destroys currently executing `fiber`. **/
+export("fiber_return_switch")
+void fiber_return_switch(fiber_t target, void *arg);
 
 /** Runs the provided `main` function in a fiber context. **/
 export("fiber_main")

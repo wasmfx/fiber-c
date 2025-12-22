@@ -11,9 +11,6 @@ static volatile fiber_t main_fiber;
 static volatile fiber_t hello_fiber;
 static volatile fiber_t world_fiber;
 
-
-fiber_result_t status;
-
 bool hello_done;
 bool world_done;
 

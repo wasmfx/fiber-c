@@ -4,11 +4,15 @@
 
 #define export(NAME) __attribute__((export_name(NAME)))
 
-/** The signature of a fiber entry point. **/
-typedef void* (*fiber_entry_point_t)(void*);
-
 /** The abstract type of a fiber object. **/
 typedef struct fiber* fiber_t;
+
+/** The signature of a fiber entry point. **/
+/** take void* void* instead? 
+ * first pointer: argument in switch
+ * second pointer: switched_from fiber_t
+*/
+typedef void* (*fiber_entry_point_t)(void*, fiber_t);
 
 /** Allocates a new fiber with the default stack size. **/
 export("fiber_alloc")
@@ -32,16 +36,13 @@ export("fiber_switch")
 void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t *switched_from);
 
 /** Switches to `target` and destroys currently executing `fiber`. **/
+// todo: attribute no return
 export("fiber_return_switch")
 void fiber_return_switch(fiber_t target, void *arg);
 
 /** Runs the provided `main` function in a fiber context. **/
 export("fiber_main")
-void *fiber_main(void *(*main)(void*), void* arg);
-
-/** Gets the fiber running the main function of the user program. */
-export("get_main_fiber")
-fiber_t get_main_fiber(void);
+void *fiber_main(void *(*main)(void*,fiber_t), void* arg);
 
 #undef export
 #endif

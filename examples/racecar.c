@@ -12,7 +12,7 @@ static volatile fiber_t cc;
 static volatile fiber_t aa;
 static volatile fiber_t e;
 
-void* rr_func(void *__attribute__((unused))arg) {
+void* rr_func(void *__attribute__((unused))arg, fiber_t main_fiber) {
   putc('r', stdout);
   fiber_switch(aa, NULL, &rr);
   putc('r', stdout);
@@ -20,7 +20,7 @@ void* rr_func(void *__attribute__((unused))arg) {
   return NULL;
 }
 
-void* aa_func(void *__attribute__((unused))arg) {
+void* aa_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))dummy) {
   putc('a', stdout);
   fiber_switch(cc, NULL, &aa);
   putc('a', stdout);
@@ -28,7 +28,7 @@ void* aa_func(void *__attribute__((unused))arg) {
   return NULL;
 }
 
-void* cc_func(void *__attribute__((unused))arg) {
+void* cc_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))dummy) {
   putc('c', stdout);
   fiber_switch(e, NULL, &cc);
   putc('c', stdout);
@@ -36,19 +36,18 @@ void* cc_func(void *__attribute__((unused))arg) {
   return NULL;
 }
 
-void* e_func(void *__attribute__((unused))arg) {
+void* e_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))dummy) {
   putc('e', stdout);
   fiber_return_switch(cc, NULL);
   return NULL;
 }
 
-void *prog(void * __attribute__((unused))result) {
+void *prog(void * __attribute__((unused))result, fiber_t  __attribute__((unused))dummy) {
 
     rr = fiber_alloc(rr_func);
     aa = fiber_alloc(aa_func);
     cc = fiber_alloc(cc_func);
     e = fiber_alloc(e_func);
-    main_fiber = get_main_fiber();
 
     (void)fiber_switch(rr, NULL, &main_fiber);
 

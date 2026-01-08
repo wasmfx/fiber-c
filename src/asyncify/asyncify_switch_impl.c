@@ -56,7 +56,7 @@ static volatile fiber_t main_fiber = NULL;
 // * YIELDING: the fiber is suspended.
 // * RETURN_SWITCHING: the fiber is being switched from and destroyed.
 // * DONE: the fiber is finished (i.e. run to completion).
-typedef enum { ACTIVE, YIELDING, RETURN_SWITCHING, DONE } fiber_state_t;
+typedef enum { ACTIVE, YIELDING, /**RETURN_SWITCHING,**/ DONE } fiber_state_t;
 
 // A fiber stack is an asyncify stack, i.e. a reserved area of memory
 // for asyncify to store the call chain and locals. Note: asyncify
@@ -146,7 +146,6 @@ fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
 // Allocates a fiber object with the default stack size.
 __attribute__((noinline))
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
-  //printf("fiber_alloc called\n");
   return fiber_sized_alloc(default_stack_size, entry);
 }
 
@@ -187,7 +186,7 @@ bool target_fiber_valid(fiber_t fiber) {
 __attribute__((noinline))
 void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((unused))switched_from) {
 
-  if (!target_fiber_valid(fiber)) return NULL;
+  if (!target_fiber_valid(fiber)) abort();
    
   if (active_fiber->state == ACTIVE) {
     // We are switching from this fiber to `fiber`.
@@ -215,7 +214,7 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((u
 __attribute__((noinline))
 void fiber_return_switch(fiber_t fiber, void *arg) {
 
-  if (!target_fiber_valid(fiber)) exit(1);
+  if (!target_fiber_valid(fiber)) abort();
 
   // We switch from this fiber to `fiber` and destroy it!
   // Start by doing the normal things
@@ -224,8 +223,10 @@ void fiber_return_switch(fiber_t fiber, void *arg) {
   target_fiber->arg = arg;
   // Wipe the fiber arg for the target, since we're destroying it.
   target_fiber->fiber_arg = NULL;
-  // Change fiber status to RETURN_SWITCHING, which tells fiber_main to destroy it
-  active_fiber->state = RETURN_SWITCHING;
+  // We don't need to track RETURN_SWITCHING state for now
+  // So we'll just change fiber status to YIELDING
+  // active_fiber->state = RETURN_SWITCHING;
+  active_fiber->state = YIELDING;
   // Start unwinding.
   asyncify_start_unwind(&active_fiber->stack);
 }
@@ -252,7 +253,7 @@ void fiber_finalize(void) {
 #endif
 }
 
-void *fiber_main(void *(*main)(void*), void* arg) {
+void *fiber_main(void *(*main)(void*, fiber_t), void* arg) {
 
   // Make sure the main function has been allocated a fiber
   assert(main != NULL);
@@ -281,20 +282,27 @@ void *fiber_main(void *(*main)(void*), void* arg) {
       asyncify_start_rewind(&active_fiber->stack);
     }
 
-    // Run the fiber
-    result = active_fiber->entry(active_fiber->arg /* needs to have been set at the yield point */);
+    // Run the fiber, including main_fiber as the second argument so that it can be accessed
+    // by the user program.
+    result = active_fiber->entry(active_fiber->arg,main_fiber);
     asyncify_stop_unwind();
 
     // If the active fiber isn't yielding at this point, it should be done
     if (active_fiber->state == YIELDING){
       // Prepare the target
       active_fiber = target_fiber;
-    } else if (active_fiber->state == RETURN_SWITCHING) {
+    } 
+
+      // We currently don't care about RETURN_SWITCHING but this might change!
+      // Keeping this in here just in case.
+
+      /**else if (active_fiber->state == RETURN_SWITCHING) {
       // Destroy the active fiber
       fiber_free(active_fiber);
       // Set the target
       active_fiber = target_fiber;
-    }
+    } */
+
       else {
       active_fiber->state = DONE;
     }
@@ -305,7 +313,6 @@ void *fiber_main(void *(*main)(void*), void* arg) {
   }
 
   // When no active fiber or target is done, we're finished
-  
   fiber_free(main_fiber);
   fiber_finalize();
   return result;

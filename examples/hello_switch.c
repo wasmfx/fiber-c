@@ -7,55 +7,55 @@
 #include <string.h>
 #include <fiber_switch.h>
 
-static volatile fiber_t main_fiber;
-static volatile fiber_t hello_fiber;
-static volatile fiber_t world_fiber;
+static fiber_t hello_fiber;
+static fiber_t world_fiber;
 
-bool hello_done;
-bool world_done;
+static bool hello_done;
+static bool world_done;
 
 
-void* hello(void *arg) {
+void* hello(void *arg, fiber_t main_fiber) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
   
   static const char s[] = "hlowrd";
 
-  while (!world_done) {
+  do  {
     putc(s[i], stdout);
     i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &hello_fiber);
-  }
+  } while (!world_done && world_fiber != NULL);
 
   hello_done = true;
-  fiber_switch(main_fiber, (void*)(uintptr_t)i, &hello_fiber);
+  fiber_return_switch(main_fiber, (void*)(uintptr_t)i);
   return NULL;
 }
 
-void* world(void *arg) {
+void* world(void *arg, fiber_t  __attribute__((unused))main_fiber) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
   static const char s[] = "el ol";
 
-  while (i < strlen(s)) {
+  do {
     putc(s[i], stdout);
     i++;
     i = (uint32_t)(uintptr_t)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
-  }
+  } while (i < strlen(s));
+
   world_done = true;
   fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
   return NULL;
 }
 
-void *prog(void * __attribute__((unused))result) {
+void *prog(void * __attribute__((unused))result, fiber_t dummy) {
 
-  hello_fiber = fiber_alloc(hello);
-  world_fiber = fiber_alloc(world);
-  main_fiber = get_main_fiber();
+  hello_fiber = fiber_alloc((fiber_entry_point_t)hello);
+  world_fiber = fiber_alloc((fiber_entry_point_t)world);
 
   hello_done = false;
   world_done = false;
 
   uint32_t i = 0;
 
-  (void)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &main_fiber);
+  // Initial switch must be from *some* fiber, so we use dummy.
+  (void)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &dummy);
 
   putc('\n', stdout);
   fflush(stdout);

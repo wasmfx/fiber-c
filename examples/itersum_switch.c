@@ -8,8 +8,8 @@
 static fiber_t run_fiber;
 static fiber_t sum_fiber;
 
-static int prog_argc;
-static char** prog_argv;
+static int argc_global;
+static char** argv_global;
 
 
 void* sum(void *arg, fiber_t  __attribute__((unused))main_fiber) {
@@ -43,12 +43,12 @@ void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
 
   run_fiber = fiber_alloc((fiber_entry_point_t)run);
 
-  if (prog_argc != 2) {
+  if (argc_global != 2) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return 0;
   }
 
-  int i = atoi(prog_argv[1]);
+  int i = atoi(argv_global[1]);
 
   int32_t result = (int32_t)fiber_switch(run_fiber, (void*)(intptr_t)i, &dummy);
   
@@ -61,8 +61,8 @@ void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
 
 int main(int argc, char** argv) {
 
-  prog_argc = argc;
-  prog_argv = argv;
+  argc_global = argc;
+  argv_global = argv;
 
   void *result = fiber_main(prog, NULL);
   

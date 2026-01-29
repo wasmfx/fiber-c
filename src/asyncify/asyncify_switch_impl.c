@@ -226,7 +226,6 @@ void fiber_switch_return(fiber_t fiber, void *arg) {
   active_fiber->state = YIELDING;
   // Start unwinding.
   asyncify_start_unwind(&active_fiber->stack);
-  abort(); // noreturn
 }
 
 // Noop when stack pooling is disabled.

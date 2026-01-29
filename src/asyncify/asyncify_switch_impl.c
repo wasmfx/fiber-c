@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 // for printing things, remove later
-#include <stdio.h>
 #include <assert.h>
 
 #include "fiber_switch.h"

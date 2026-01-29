@@ -165,7 +165,7 @@ fiber_t get_main_fiber(void) {
 }
 
 // Some checks we do on a target fiber before switching to it
-bool target_fiber_valid(fiber_t fiber) {
+static bool target_fiber_valid(fiber_t fiber) {
   // don't switch to a done or null fiber
   if (fiber->state == DONE || fiber == NULL) {
     printf("fiber_switch: error: switching to done or null fiber %p\n", (void*)fiber);

@@ -38,6 +38,7 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t *switched_from);
 /** Switches to `target` and destroys currently executing `fiber`. **/
 // todo: attribute no return
 export("fiber_return_switch")
+__attribute__((noreturn))
 void fiber_return_switch(fiber_t target, void *arg);
 
 /** Runs the provided `main` function in a fiber context. **/

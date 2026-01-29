@@ -17,7 +17,7 @@ void* sum(void *arg, fiber_t  __attribute__((unused))main_fiber) {
   for (int32_t i = 0; i < max; i++) {
     fiber_switch(run_fiber, (void*)(intptr_t)i, &sum_fiber);
   }
-  fiber_return_switch(run_fiber, NULL);
+  fiber_switch_return(run_fiber, NULL);
   return NULL;
 }
 
@@ -35,7 +35,7 @@ int32_t run(int32_t max, fiber_t main_fiber) {
   }
 
   fiber_free(sum_fiber);
-  fiber_return_switch(main_fiber, (void*)(intptr_t)result);
+  fiber_switch_return(main_fiber, (void*)(intptr_t)result);
   return 0;
 }
 
@@ -51,7 +51,7 @@ void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
   int i = atoi(argv_global[1]);
 
   int32_t result = (int32_t)fiber_switch(run_fiber, (void*)(intptr_t)i, &dummy);
-  
+
   printf("%d\n", result);
 
   fiber_free(run_fiber);
@@ -65,6 +65,6 @@ int main(int argc, char** argv) {
   argv_global = argv;
 
   void *result = fiber_main(prog, NULL);
-  
+
   return (int)(intptr_t)result;
 }

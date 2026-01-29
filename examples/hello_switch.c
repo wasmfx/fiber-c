@@ -16,7 +16,7 @@ static bool world_done;
 
 void* hello(void *arg, fiber_t main_fiber) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
-  
+
   static const char s[] = "hlowrd";
 
   do  {
@@ -25,7 +25,7 @@ void* hello(void *arg, fiber_t main_fiber) {
   } while (!world_done && world_fiber != NULL);
 
   hello_done = true;
-  fiber_return_switch(main_fiber, (void*)(uintptr_t)i);
+  fiber_switch_return(main_fiber, (void*)(uintptr_t)i);
   return NULL;
 }
 
@@ -69,6 +69,6 @@ void *prog(void * __attribute__((unused))result, fiber_t dummy) {
 int main(int __attribute__((unused)) argc, char * __attribute__((unused))argv[]) {
 
   void *result = fiber_main(prog, NULL);
-  
+
   return (int)(intptr_t)result;
 }

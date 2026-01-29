@@ -66,7 +66,7 @@ void walk_tree(node_t *node) {
 void* tree_walker(void *node, fiber_t  __attribute__((unused))main_fiber) {
   walk_tree((node_t*)node);
   walk_done = true;
-  fiber_return_switch(runner, NULL);
+  fiber_switch_return(runner, NULL);
   return NULL;
 }
 
@@ -81,7 +81,7 @@ int32_t run(node_t* tree, fiber_t main_fiber) {
   }
 
   fiber_free(walker);
-  fiber_return_switch(main_fiber, (void*)(intptr_t)sum);
+  fiber_switch_return(main_fiber, (void*)(intptr_t)sum);
 
   return 0;
 }
@@ -94,7 +94,7 @@ void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
   }
 
   int i = atoi(argv_global[1]);
-  
+
   node_t *tree = build_tree((int32_t)i, 0);
 
   runner = fiber_alloc((fiber_entry_point_t)run);
@@ -116,6 +116,6 @@ int main(int argc, char** argv) {
   argv_global = argv;
 
   void *result = fiber_main(prog, NULL);
-  
+
   return (int)(intptr_t)result;
 }

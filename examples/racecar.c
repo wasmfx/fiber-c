@@ -16,7 +16,7 @@ void* rr_func(void *__attribute__((unused))arg, fiber_t main_fiber) {
   putc('r', stdout);
   fiber_switch(aa, NULL, &rr);
   putc('r', stdout);
-  fiber_return_switch(main_fiber, NULL);
+  fiber_switch_return(main_fiber, NULL);
   return NULL;
 }
 
@@ -24,7 +24,7 @@ void* aa_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))
   putc('a', stdout);
   fiber_switch(cc, NULL, &aa);
   putc('a', stdout);
-  fiber_return_switch(rr, NULL);
+  fiber_switch_return(rr, NULL);
   return NULL;
 }
 
@@ -32,13 +32,13 @@ void* cc_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))
   putc('c', stdout);
   fiber_switch(e, NULL, &cc);
   putc('c', stdout);
-  fiber_return_switch(aa, NULL);
+  fiber_switch_return(aa, NULL);
   return NULL;
 }
 
 void* e_func(void *__attribute__((unused))arg, fiber_t  __attribute__((unused))dummy) {
   putc('e', stdout);
-  fiber_return_switch(cc, NULL);
+  fiber_switch_return(cc, NULL);
   return NULL;
 }
 
@@ -60,6 +60,6 @@ void *prog(void * __attribute__((unused))result, fiber_t  __attribute__((unused)
 int main(int __attribute__((unused)) argc, char * __attribute__((unused))argv[]) {
 
   void *result = fiber_main(prog, NULL);
-  
+
   return (int)(intptr_t)result;
 }

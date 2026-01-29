@@ -174,7 +174,6 @@ static bool target_fiber_valid(fiber_t fiber) {
 
   // don't switch to yourself
   if (fiber == active_fiber) {
-    printf("fiber_switch: error: switching to self %p\n", (void*)fiber);
     asyncify_start_unwind(&active_fiber->stack);
     return false;
   }

@@ -184,7 +184,7 @@ __attribute__((noinline))
 void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((unused))switched_from) {
 
   if (!target_fiber_valid(fiber)) abort();
-   
+
   if (active_fiber->state == ACTIVE) {
     // We are switching from this fiber to `fiber`.
     // Save `fiber` in a global such that we can retrieve it from the top-level.
@@ -201,7 +201,7 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((u
     // Otherwise we must be switched to
     asyncify_stop_rewind();
     active_fiber->state = ACTIVE;
-    fiber = active_fiber->fiber_arg; 
+    fiber = active_fiber->fiber_arg;
     // Note(dhil): need to be a bit careful here to make sure `fiber` is correctly updated, probably needs to be a pointer-to-a-pointer to be correct.
     return active_fiber->arg;
   }
@@ -209,7 +209,7 @@ void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t * __attribute__((u
 
 /** Switches to `target` and destroys currently executing `fiber`. **/
 __attribute__((noinline))
-void fiber_return_switch(fiber_t fiber, void *arg) {
+void fiber_switch_return(fiber_t fiber, void *arg) {
 
   if (!target_fiber_valid(fiber)) abort();
 
@@ -226,6 +226,7 @@ void fiber_return_switch(fiber_t fiber, void *arg) {
   active_fiber->state = YIELDING;
   // Start unwinding.
   asyncify_start_unwind(&active_fiber->stack);
+  abort(); // noreturn
 }
 
 // Noop when stack pooling is disabled.
@@ -288,7 +289,7 @@ void *fiber_main(void *(*main)(void*, fiber_t), void* arg) {
     if (active_fiber->state == YIELDING){
       // Prepare the target
       active_fiber = target_fiber;
-    } 
+    }
 
       // We currently don't care about RETURN_SWITCHING but this might change!
       // Keeping this in here just in case.

@@ -8,7 +8,7 @@
 typedef struct fiber* fiber_t;
 
 /** The signature of a fiber entry point. **/
-/** take void* void* instead? 
+/** take void* void* instead?
  * first pointer: argument in switch
  * second pointer: switched_from fiber_t
 */
@@ -33,7 +33,7 @@ typedef enum { FIBER_OK = 0, FIBER_SWITCH = 1, FIBER_ERROR = 2 } fiber_result_t;
     (`FIBER_YIELD`), or failed (`FIBER_ERROR`), in the latter case the
     return value will be undefined. **/
 export("fiber_switch")
-void* fiber_switch(fiber_t fiber, void *arg, volatile fiber_t *switched_from);
+void* fiber_switch(fiber_t fiber, void *arg, fiber_t *switched_from);
 
 /** Switches to `target` and destroys currently executing `fiber`. **/
 // todo: attribute no return
@@ -42,7 +42,7 @@ void fiber_switch_return(fiber_t target, void *arg);
 
 /** Runs the provided `main` function in a fiber context. **/
 export("fiber_main")
-void *fiber_main(void *(*main)(void*,fiber_t), void* arg);
+void *fiber_main(void *(*main)(int argc, char **argv), int argc, char **argv);
 
 #undef export
 #endif

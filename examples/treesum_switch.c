@@ -1,16 +1,13 @@
 // Tree traversal; a recursive variation of `itersum.c`
 // Now using `switch`!
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <fiber_switch.h>
 
-static int argc_global;
-static char** argv_global;
-
-static fiber_t runner;
-static fiber_t walker;
+#include <string.h>
 
 static bool walk_done = false;
 
@@ -54,68 +51,64 @@ void free_tree(node_t *node) {
   free(node);
 }
 
-void walk_tree(node_t *node) {
+void walk_tree(node_t const *const node, fiber_t switch_back) {
+  assert(switch_back != NULL);
   if (node->tag == LEAF) {
-    fiber_switch(runner, (void*)(intptr_t)node->val, &walker);
+    (void)fiber_switch(switch_back, (void*)(intptr_t)node->val, &switch_back);
   } else {
-    walk_tree(node->left);
-    walk_tree(node->right);
+    walk_tree(node->left, switch_back);
+    walk_tree(node->right, switch_back);
   }
 }
 
-void* tree_walker(void *node, fiber_t  __attribute__((unused))main_fiber) {
-  walk_tree((node_t*)node);
+void* tree_walker(void const *const node, fiber_t caller) {
+  assert(caller != NULL);
+  walk_tree((node_t*)node, caller);
   walk_done = true;
-  fiber_return_switch(runner, NULL);
+
+  fiber_switch_return(caller, NULL);
   return NULL;
 }
 
-int32_t run(node_t* tree, fiber_t main_fiber) {
+void* run(node_t const *const tree, fiber_t caller) {
+  assert(caller != NULL);
   int32_t sum = 0;
-  walker = fiber_alloc((fiber_entry_point_t)tree_walker);
-  void* val = fiber_switch(walker, (void*)tree, &runner);
+
+  fiber_t walker = fiber_alloc((fiber_entry_point_t)tree_walker);
+  void* val = fiber_switch(walker, (void*)tree, &walker);
 
   while (!walk_done) {
     sum += (int32_t)(intptr_t)val;
-    val = fiber_switch(walker, NULL, &runner);
+    val = fiber_switch(walker, NULL, &walker);
   }
 
   fiber_free(walker);
-  fiber_return_switch(main_fiber, (void*)(intptr_t)sum);
-
-  return 0;
+  fiber_switch_return(caller, (void*)(intptr_t)sum);
+  return NULL;
 }
 
-void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
+void *prog(int argc, char **argv) {
 
-  if (argc_global != 2) {
+  if (argc != 2) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return 0;
   }
 
-  int i = atoi(argv_global[1]);
-  
-  node_t *tree = build_tree((int32_t)i, 0);
+  int32_t const i = (int32_t)atoi(argv[1]);
+  node_t *tree = build_tree(i, 0);
 
-  runner = fiber_alloc((fiber_entry_point_t)run);
-
-  int32_t result = (int32_t)fiber_switch(runner, (void*)(intptr_t)tree, &dummy);
+  fiber_t runner = fiber_alloc((fiber_entry_point_t)run);
+  int32_t const result = (int32_t)(intptr_t)fiber_switch(runner, (void*)(intptr_t)tree, &runner);
 
   fiber_free(runner);
-
   free_tree(tree);
-
-  printf("%d\n", result);
-
-  return 0;
+  return (void*)(intptr_t)result;
 }
 
 int main(int argc, char** argv) {
 
-  argc_global = argc;
-  argv_global = argv;
+  int32_t const result = (int32_t)(intptr_t)fiber_main(prog, argc, argv);
+  printf("%d\n", result);
 
-  void *result = fiber_main(prog, NULL);
-  
-  return (int)(intptr_t)result;
+  return 0;
 }

@@ -1,70 +1,60 @@
 // Iterative sum; an iterative variation of `treesum.c`
 // Now using `switch`!
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <fiber_switch.h>
 
-static fiber_t run_fiber;
-static fiber_t sum_fiber;
-
-static int argc_global;
-static char** argv_global;
-
-
-void* sum(void *arg, fiber_t  __attribute__((unused))main_fiber) {
-  int32_t max = (int32_t)(intptr_t)arg;
+void* sum(void *arg, fiber_t caller) {
+  assert(caller != NULL);
+  int32_t const max = (int32_t)(intptr_t)arg;
   for (int32_t i = 0; i < max; i++) {
-    fiber_switch(run_fiber, (void*)(intptr_t)i, &sum_fiber);
+    fiber_switch(caller, (void*)(intptr_t)i, &caller);
   }
-  fiber_return_switch(run_fiber, NULL);
+  fiber_switch_return(caller, NULL);
   return NULL;
 }
 
-int32_t run(int32_t max, fiber_t main_fiber) {
-
-  sum_fiber = fiber_alloc((fiber_entry_point_t)sum);
+void* run(void *arg, fiber_t caller) {
+  assert(caller != NULL);
+  fiber_t sum_fiber = fiber_alloc(sum);
   int32_t result = 0, i = 0;
+  int32_t const max = (int32_t)(intptr_t)arg;
 
-
-  void* val = fiber_switch(sum_fiber, (void*)(intptr_t)max, &run_fiber);
+  int32_t val = (int32_t)(intptr_t)fiber_switch(sum_fiber, (void*)(intptr_t)max, &sum_fiber);
 
   while (i++ < max) {
     result += (int32_t)(intptr_t)val;
-    val = fiber_switch(sum_fiber, NULL, &run_fiber);
+    val = (int32_t)(intptr_t)fiber_switch(sum_fiber, NULL, &sum_fiber);
   }
 
   fiber_free(sum_fiber);
-  fiber_return_switch(main_fiber, (void*)(intptr_t)result);
-  return 0;
+  fiber_switch_return(caller, (void*)(intptr_t)result);
+  return NULL;
 }
 
-void *prog(void * __attribute__((unused))unused_result, fiber_t dummy) {
+void *prog(int argc, char **argv) {
 
-  run_fiber = fiber_alloc((fiber_entry_point_t)run);
+  fiber_t run_fiber = fiber_alloc(run);
 
-  if (argc_global != 2) {
+  if (argc != 2) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return 0;
   }
 
-  int i = atoi(argv_global[1]);
-
-  int32_t result = (int32_t)fiber_switch(run_fiber, (void*)(intptr_t)i, &dummy);
-  
-  printf("%d\n", result);
+  int const i = atoi(argv[1]);
+  int32_t result = (int32_t)(intptr_t)fiber_switch(run_fiber, (void*)(intptr_t)i, &run_fiber);
 
   fiber_free(run_fiber);
 
-  return 0;
+  return (void*)(intptr_t)result;
 }
 
 int main(int argc, char** argv) {
 
-  argc_global = argc;
-  argv_global = argv;
+  int32_t const result = (int32_t)(intptr_t)fiber_main(prog, argc, argv);
+  printf("%d\n", result);
 
-  void *result = fiber_main(prog, NULL);
-  
-  return (int)(intptr_t)result;
+  return 0;
 }

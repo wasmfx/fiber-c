@@ -20,7 +20,7 @@ endif
 all: hello sieve itersum treesum itersum_switch treesum_switch
 
 .PHONY: hello
-hello: hello_asyncify.wasm hello_asyncify_switch.wasm racecar.wasm hello_wasmfx.wasm
+hello: hello_asyncify.wasm hello_asyncify_switch.wasm hello_wasmfx.wasm
 
 hello_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/hello.c
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/hello.c -o hello_asyncfiy.pre.wasm
@@ -100,7 +100,7 @@ itersum_switch_wasmfx.wasm: inc/fiber_switch.h src/wasmfx/imports_switch.wat src
 	chmod +x itersum_switch_wasmfx.wasm
 
 .PHONY: treesum_switch
-treesum_switch: treesum_switch_asyncify.wasm
+treesum_switch: treesum_switch_asyncify.wasm treesum_switch_wasmfx.wasm
 
 treesum_switch_asyncify.wasm: inc/fiber_switch.h src/asyncify/asyncify_switch_impl.c examples/treesum_switch.c
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_switch_impl.c $(WASIFLAGS) examples/treesum_switch.c -o treesum_switch_asyncfiy.pre.wasm

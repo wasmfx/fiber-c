@@ -7,12 +7,12 @@
 #include <string.h>
 #include <fiber_switch.h>
 
-static fiber_t hello_fiber;
-static fiber_t world_fiber;
 
 static bool hello_done;
 static bool world_done;
 
+static fiber_t hello_fiber;
+static fiber_t world_fiber;
 
 void* hello(void *arg, fiber_t main_fiber) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
@@ -21,7 +21,7 @@ void* hello(void *arg, fiber_t main_fiber) {
 
   do  {
     putc(s[i], stdout);
-    i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &hello_fiber);
+    i = (uint32_t)(uintptr_t)fiber_switch(world_fiber, (void*)(uintptr_t)i, &world_fiber);
   } while (!world_done && world_fiber != NULL);
 
   hello_done = true;
@@ -29,22 +29,22 @@ void* hello(void *arg, fiber_t main_fiber) {
   return NULL;
 }
 
-void* world(void *arg, fiber_t  __attribute__((unused))main_fiber) {
+void* world(void *arg, fiber_t hello_fiber) {
   uint32_t i = (uint32_t)(uintptr_t)arg;
   static const char s[] = "el ol";
 
   do {
     putc(s[i], stdout);
     i++;
-    i = (uint32_t)(uintptr_t)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
+    i = (uint32_t)(uintptr_t)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &hello_fiber);
   } while (i < strlen(s));
 
   world_done = true;
-  fiber_switch(hello_fiber, (void*)(uintptr_t)i, &world_fiber);
+  fiber_switch_return(hello_fiber, (void*)(uintptr_t)i);
   return NULL;
 }
 
-void *prog(void * __attribute__((unused))result, fiber_t dummy) {
+void *prog(int __attribute__((unused)) argc, char __attribute__((unused)) **argv) {
 
   hello_fiber = fiber_alloc((fiber_entry_point_t)hello);
   world_fiber = fiber_alloc((fiber_entry_point_t)world);
@@ -55,7 +55,7 @@ void *prog(void * __attribute__((unused))result, fiber_t dummy) {
   uint32_t i = 0;
 
   // Initial switch must be from *some* fiber, so we use dummy.
-  (void)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &dummy);
+  (void)fiber_switch(hello_fiber, (void*)(uintptr_t)i, &hello_fiber);
 
   putc('\n', stdout);
   fflush(stdout);
@@ -66,9 +66,9 @@ void *prog(void * __attribute__((unused))result, fiber_t dummy) {
   return NULL;
 }
 
-int main(int __attribute__((unused)) argc, char * __attribute__((unused))argv[]) {
+int main(int argc, char **argv) {
 
-  void *result = fiber_main(prog, NULL);
+  void *result = fiber_main(prog, argc, argv);
 
   return (int)(intptr_t)result;
 }

@@ -5,7 +5,7 @@ WASMFX_PRESERVE_SHADOW_STACK?=1
 # Only relevant if WASMFX_PRESERVE_SHADOW_STACK is 1
 WASMFX_CONT_SHADOW_STACK_SIZE?=65536
 ASYNCIFY=../binaryen/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 --asyncify
-WASICC=../benchfx/wasi-sdk-22.0/bin/clang
+WASICC=../benchfx/wasi-sdk-25.0-linux/bin/clang
 WASIFLAGS=--sysroot=../benchfx/wasi-sdk-22.0/share/wasi-sysroot -std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes -O3 -I inc
 WASM_INTERP=../spec/interpreter/wasm
 WASM_MERGE=../binaryen/bin/wasm-merge --enable-multimemory --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching

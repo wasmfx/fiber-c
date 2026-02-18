@@ -1,7 +1,10 @@
-#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#include <shadowstack.h>
+
+extern void wasmfx_ss_init(void *sstack_current_ptrs_addr);
 
 // Returns the current value of the Clang shadow stack pointer.
 extern uintptr_t wasmfx_ssptr_get();
@@ -23,18 +26,37 @@ static void** sstack_current_ptrs;
 
 // Initialises the shadow stack for the continuation determined by
 // `cont_index`.
-void init_shadow_stack(size_t cont_index) {
+void init_shadow_stack(uintptr_t cont_index) {
   char* shadow_stack_bottom = malloc(cont_shadow_stack_size);
   void* shadow_stack_usable_top =
     ((char*)shadow_stack_bottom) + cont_shadow_stack_size - 0x10;
-  sstack_bottom_ptrs[cont_index] = shadow_stack_bottom;
-  sstack_current_ptrs[cont_index] = shadow_stack_usable_top;
+  sstack_bottom_ptrs[(size_t)cont_index] = shadow_stack_bottom;
+  sstack_current_ptrs[(size_t)cont_index] = shadow_stack_usable_top;
 }
 
-#else
 
-// Noop implementation here
+void change_shadow_stack_capacity(size_t new_capacity) {
+   sstack_bottom_ptrs = realloc(sstack_bottom_ptrs, sizeof(void*) * new_capacity);
+   sstack_current_ptrs = realloc(sstack_current_ptrs, sizeof(void*) * new_capacity);
+}
 
-#endif
+void free_shadow_stack(uintptr_t cont_index) {
+  void* shadow_stack_usable_top =
+    ((char*)sstack_bottom_ptrs[(size_t)cont_index]) + cont_shadow_stack_size - 0x10;
+  sstack_current_ptrs[(size_t)cont_index] = shadow_stack_usable_top;
+}
 
+void init_shadow_stack_runtime(size_t initial_capacity) {
+  wasmfx_ss_init(&sstack_current_ptrs);
+  sstack_bottom_ptrs = malloc(initial_capacity * sizeof(void*));
+  sstack_current_ptrs = malloc(initial_capacity * sizeof(void*));
+}
 
+void finalize_shadow_stack_runtime(size_t current_capacity, size_t unused_capacity) {
+  assert(unused_capacity < current_capacity);
+  for (size_t i = 0; i < current_capacity - unused_capacity; i++) {
+    free(sstack_bottom_ptrs[i]);
+  }
+  free(sstack_bottom_ptrs);
+  free(sstack_current_ptrs);
+}

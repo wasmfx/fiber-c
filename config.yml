@@ -1,5 +1,8 @@
 PREFIX : "#!/bin/bash\n"
 
+# List of valid engines
+ENGINES : [ "d8", "wasmtime", "wizard" ]
+
 # Paths to engines
 WASMTIME_PATH : "../wasmtime/target/release/wasmtime"
 D8_PATH : "../v8/v8/out/x64.release/d8"
@@ -22,6 +25,16 @@ SHADOW_STACK_FLAG : ""
 # Paths to imports
 WASMFX_IMPORTS : "wasmfx_imports.wasm"
 V8_JS_LOADER : "load.mjs"
+
+# List of valid benchmarks
+BENCHMARKS : [ 
+    "itersum",
+    "sieve",
+    "treesum",
+    # "itersum_switch",
+    # "sieve_switch",
+    # "treesum_switch"
+  ]
 
 # Arguments for benchmarks
 ITERSUM_ARGS : 1000000

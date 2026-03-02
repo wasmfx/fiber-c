@@ -9,17 +9,7 @@ from pathlib import Path
 # Import config
 config = yaml.safe_load(open("config.yml"))
 
-# List of valid benchmarks
-BENCHMARKS = {
-    "hello",
-    "itersum",
-    "sieve",
-    "treesum",
-    "hello_switch",
-    "itersum_switch",
-    "sieve_switch",
-    "treesum_switch",
-}
+BENCHMARKS = config["BENCHMARKS"]
 
 # ---- Build .wasms for a particular benchmark ----
 
@@ -98,7 +88,6 @@ def make_script(filename: Path, content: str):
 def generate_scripts(benchmark: str, engines: list[str]):
 
     # Set arguments for benchmarks that need them
-    # This set of arguments yields runtimes within the same order of magnitude
     if benchmark in {"itersum", "itersum_switch"}:
         arg = config["ITERSUM_ARGS"]
     elif benchmark in {"treesum", "treesum_switch"}:
@@ -122,7 +111,6 @@ def generate_scripts(benchmark: str, engines: list[str]):
                 arg=arg
             )
             make_script(Path(script_name), content)
-            print("Generated scripts for benchmark:", benchmark)
 
 def benchmark_validation(benchmarks):
     for benchmark in benchmarks:
@@ -163,7 +151,7 @@ def main():
         case "make-all":
             for benchmark in BENCHMARKS:
                 build_benchmarks(benchmark)
-                generate_scripts(benchmark)
+                generate_scripts(benchmark,args.engines)
                 print("Built .wasm files and generated scripts for all benchmarks")
         case "clean-all":
             clean_all()

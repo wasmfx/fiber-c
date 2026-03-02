@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import yaml
 import sys
 import os
@@ -94,7 +95,7 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
-def generate_scripts(benchmark: str):
+def generate_scripts(benchmark: str, engines: list[str]):
 
     # Set arguments for benchmarks that need them
     # This set of arguments yields runtimes within the same order of magnitude
@@ -107,8 +108,8 @@ def generate_scripts(benchmark: str):
     else:
         arg = ""
 
-    for engine, modes in ENGINES.items():
-        for mode, template in modes.items():
+    for engine in engines:
+        for mode, template in ENGINES[engine].items():
             script_name = f"{benchmark}_{engine}_{mode}.sh"
             content = template.format(
                 set_arch = "setarch -R ",
@@ -123,42 +124,69 @@ def generate_scripts(benchmark: str):
             make_script(Path(script_name), content)
             print("Generated scripts for benchmark:", benchmark)
 
+def benchmark_validation(benchmarks):
+    for benchmark in benchmarks:
+        if benchmark not in BENCHMARKS:
+            print(f"Error: Benchmark '{benchmark}' is not recognized.")
+            sys.exit(1)
+
 def main():
-    if (len(sys.argv) < 2) or \
-            not (((len(sys.argv) > 2) and (sys.argv[1] in {"run","compile","clean"})) or ((sys.argv[1] in {"make-all","clean-all"}))):
-        print(textwrap.dedent("""
-                Usage: ./build.py <compile|run|clean> <benchmark program> | <make-all|clean-all>
 
-                    compile.  : builds .wasm files for the given benchmark
-                    run       : generates script for running the given benchmark across all engines and modes
-                    clean     : removes side-products for the given benchmark
-                    make-all  : builds .wasm files and generates scripts for all benchmarks
-                    clean-all : removes all .wasm files and scripts for all benchmarks
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "-mode", "--mode", nargs="?", choices=["make-all", "clean-all"]
+    )
+    parser.add_argument(
+        "-compile", "--compile", nargs="*", help="List of benchmarks", 
+        default=None
+    )
+    parser.add_argument(
+        "-gen-scripts", "--gen-scripts", nargs="*", help="List of benchmarks", 
+        default=None
+    )
+    parser.add_argument(
+        "-clean", "--clean", nargs="*", help="List of benchmarks", 
+        default=None
+    )
+    parser.add_argument(
+        "-engines", "--engines", nargs="*", choices=list(ENGINES.keys()), help="List of engines", 
+        default=ENGINES.keys()
+    )
 
-                    Example: ./build.py compile sieve
-                    Example: ./build.py clean-all 
-            """))
+    args = parser.parse_args()
+
+    if not (args.mode or args.compile or args.gen_scripts or args.clean):
+        print("Error: Must specify at least one of --mode, --compile, --gen-scripts, or --clean")
         sys.exit(1)
 
-    mode = sys.argv[1]
+    match args.mode:
+        case "make-all":
+            for benchmark in BENCHMARKS:
+                build_benchmarks(benchmark)
+                generate_scripts(benchmark)
+                print("Built .wasm files and generated scripts for all benchmarks")
+        case "clean-all":
+            clean_all()
+            print("Cleaned all artefacts for all benchmarks")
+        case None:
+            if args.compile:
+                benchmark_validation(args.compile)
+                for benchmark in args.compile:
+                    build_benchmarks(benchmark)
+                    print("Built .wasm files for benchmark:", benchmark)
+            
+            if args.gen_scripts:
+                benchmark_validation(args.gen_scripts)
+                for benchmark in args.gen_scripts:
+                    generate_scripts(benchmark,args.engines)
+                    print("Generated scripts for benchmark:", benchmark)
 
-    if not (mode in  {"make-all", "clean-all"}): benchmark = sys.argv[2]
-    
-    if mode == "compile":
-        build_benchmarks(benchmark)
-        print("Built .wasm files for benchmark:", benchmark)
-    elif mode == "clean":
-        clean_artefacts(benchmark)
-        print("Cleaned side-products for benchmark:", benchmark)
-    elif mode == "clean-all":
-        clean_all()
-        print("Cleaned all artefacts for all benchmarks")
-    elif mode == "make-all":
-        for benchmark in BENCHMARKS:
-            build_benchmarks(benchmark)
-            generate_scripts(benchmark)
-    else:
-        generate_scripts(benchmark)
+            if args.clean:
+                benchmark_validation(args.clean)
+                for benchmark in args.clean:
+                    clean_artefacts(benchmark)
+                    print("Cleaned side-products for benchmark:", benchmark)
+   
 
 if __name__ == "__main__":
     main()

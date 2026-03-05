@@ -93,14 +93,17 @@ export class Wasi {
 	}
 }
 
-// now import `Wasi` to use it
-const wasi = new Wasi({
-	// "1" must be passed as first arg for `itersum`, `treesum`, and `sieve`
-    args: ["1","5"]
-});
-
 // load the wasm file
 const binary = readbuffer(arguments[0]);
+// argument to pass to the wasm module, if any
+const arg = arguments.length > 1 ? arguments[1] : "";
+
+// import `Wasi` to use it
+const wasi = new Wasi({
+	// "1" must be passed as first arg for `itersum`, `treesum`, and `sieve`
+    args: ["1",arg]
+});
+
 WebAssembly.instantiate(binary, { "wasi_snapshot_preview1": wasi }).then(({ instance }) => {
   wasi.instance = instance;
   instance.exports._start();

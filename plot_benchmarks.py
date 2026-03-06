@@ -82,7 +82,7 @@ n = len(benches)
 ax.grid(visible=True, axis="y")
 plt.title("Benchmark results (Asyncify time / WasmFX time)")
 plt.xlabel("Engine")
-plt.ylabel("Time [s]")
+plt.ylabel("Speedup (relative to Asyncify)")
 # plt.ylim(0, 1.2)
 plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
 

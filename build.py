@@ -7,15 +7,12 @@ from pathlib import Path
 
 # Import config
 config = yaml.safe_load(open("config.yml"))
-BENCHMARKS = config["BENCHMARKS"]
+BENCHMARKS = config["BENCHMARKS_FIBER_C"]
 
 # Given a benchmark name, build .wasm files for both asyncify and wasmfx modes.
+# TODO: Move the output files to a more sensible directory, such as /benchfx/out/benchmark_name
 def build_benchmarks(benchmark: str):
-    os.system(f"make {benchmark}")
-    
-def wasmtime_precompile(benchmark: str):
-    for mode in ["asyncify", "wasmfx"]:
-        os.system(f"{config['WASMTIME_PATH']} compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 {benchmark}_{mode}.wasm -o {benchmark}_{mode}.cwasm")
+    os.system(f"make BENCHMARK={benchmark}")
 
 def clean_all():
     os.system(f"make clean")
@@ -33,8 +30,8 @@ ENGINES = {
     },
     
     "wizard": {
-        "asyncify": "{prefix} setarch -R {wizard} --ext:stack-switching {benchmark}_asyncify.wasm {arg}",
-        "wasmfx": "{prefix} setarch -R {wizard} --ext:stack-switching {benchmark}_wasmfx.wasm {arg}",
+        "asyncify": "{prefix} setarch -R {wizard} {wizard_flags} --mode=jit {benchmark}_asyncify.wasm {arg}",
+        "wasmfx": "{prefix} setarch -R {wizard} {wizard_flags} --mode=jit {benchmark}_wasmfx.wasm {arg}",
     },
 }
 
@@ -43,14 +40,13 @@ def make_script(filename: Path, content: str):
     filename.chmod(0o755)
 
 def generate_scripts(benchmark: str, engines: list[str]):
-
     # Set arguments for benchmarks that need them
     if benchmark in {"itersum", "itersum_switch"}:
         arg = config["ITERSUM_ARGS"]
     elif benchmark in {"treesum", "treesum_switch"}:
         arg = config["TREESUM_ARGS"]
-    elif benchmark in {"sieve", "sieve_switch"}:
-        arg = config["SIEVE_ARGS"]
+    elif benchmark in {"sieve1", "sieve1_switch"}:
+        arg = config["SIEVE1_ARGS"]
     else:
         arg = ""
 
@@ -64,9 +60,10 @@ def generate_scripts(benchmark: str, engines: list[str]):
                 d8=config["D8_PATH"],
                 wizard=config["WIZARD_PATH"],
                 v8_js_loader=config["V8_JS_LOADER"],
-                arg=arg
+                arg=arg,
+                wizard_flags=config["WIZARD_FLAGS"],
             )
-            make_script(Path(script_name), content)
+            make_script(Path("run-scripts/" + script_name), content)
 
 def benchmark_validation(benchmarks):
     for benchmark in benchmarks:
@@ -101,8 +98,8 @@ def main():
     match args.mode:
         case "make-all":
             for benchmark in BENCHMARKS:
+                print("Building benchmark:", benchmark)
                 build_benchmarks(benchmark)
-                wasmtime_precompile(benchmark)
                 generate_scripts(benchmark,args.engines)
                 print("Built .wasm files and generated scripts for benchmark:", benchmark)
         case "clean-all":
@@ -112,7 +109,6 @@ def main():
                 benchmark_validation(args.compile)
                 for benchmark in args.compile:
                     build_benchmarks(benchmark)
-                    wasmtime_precompile(benchmark)
                     print("Built .wasm files for benchmark:", benchmark)
             if args.gen_scripts:
                 benchmark_validation(args.gen_scripts)

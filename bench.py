@@ -4,22 +4,20 @@ import yaml
 import sys
 import os
 from pathlib import Path
-import textwrap
 
 config = yaml.safe_load(open("config.yml"))
 
-all_benchmarks = config["BENCHMARKS"]
+all_benchmarks = config["BENCHMARKS_FIBER_C"]
 all_engines = config["ENGINES"]
 
 def call_buildscript(benchmark: str):
     os.system(f"./build.py --compile {benchmark}")
-    os.system(f"./build.py --gen-scripts {benchmark}")
     
 def run_benchmarks(benchmarks, engines):
     # call hyperfine to run wasmfx benchmarks
-    os.system(f"hyperfine --warmup 3 --runs 10 --export-json bench_results/wasmfx_results.json --export-csv bench_results/wasmfx_results.csv -L benchmark {','.join(benchmarks)} -L engine {','.join(engines)} './{{benchmark}}_{{engine}}_wasmfx.sh'")
+    os.system(f"hyperfine --warmup 3 --runs 10 --export-json bench_results/wasmfx_results.json --export-csv bench_results/wasmfx_results.csv -L benchmark {','.join(benchmarks)} -L engine {','.join(engines)} 'run-scripts/./{{benchmark}}_{{engine}}_wasmfx.sh'")
     # and now asyncify benchmarks
-    os.system(f"hyperfine --warmup 3 --runs 10 --export-json bench_results/asyncify_results.json --export-csv bench_results/asyncify_results.csv -L benchmark {','.join(benchmarks)} -L engine {','.join(engines)} './{{benchmark}}_{{engine}}_asyncify.sh'")
+    os.system(f"hyperfine --warmup 3 --runs 10 --export-json bench_results/asyncify_results.json --export-csv bench_results/asyncify_results.csv -L benchmark {','.join(benchmarks)} -L engine {','.join(engines)} 'run-scripts/./{{benchmark}}_{{engine}}_asyncify.sh'")
 
 def main():
 
@@ -48,10 +46,11 @@ def main():
     os.system("mkdir -p bench_results")
     run_benchmarks(args.benchmarks, args.engines)
      # make chart
-    os.system(f"python3 plot_benchmarks.py bench_results/wasmfx_results.json bench_results/asyncify_results.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o results")
+    os.system(f"python3 plot_benchmarks.py bench_results/wasmfx_results.json bench_results/asyncify_results.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/results")
+    # make a copy of the chart in the root directory of ehop machine for webserver reasons
+    os.system("cp bench_results/results.png /opt/wasmfx/bench_results_page")
     # clean up .wasm files and scripts
     os.system("./build.py --mode clean-all")
-
 
 if __name__ == "__main__":
     main()

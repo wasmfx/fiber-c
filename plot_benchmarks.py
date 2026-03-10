@@ -17,6 +17,7 @@ import yaml
 import math
 
 config = yaml.safe_load(open("config.yml"))
+all_benchmarks = config["BENCHMARKS_FIBER_C"]
 
 # deal with inputs
 parser = argparse.ArgumentParser(description=__doc__)
@@ -25,7 +26,7 @@ parser.add_argument(
 )
 parser.add_argument(
         "-benchmarks", "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)", 
-        default=config["BENCHMARKS"]
+        default=all_benchmarks
     )
 parser.add_argument(
         "-engines", "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)", 
@@ -83,11 +84,20 @@ ax.grid(visible=True, axis="y")
 plt.title("Benchmark results (Asyncify time / WasmFX time)")
 plt.xlabel("Engine")
 plt.ylabel("Speedup (relative to Asyncify)")
-# plt.ylim(0, 1.2)
 plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
+# TODO: make it display the label
+plt.axhline(
+  y=1.0, 
+  color = 'r',
+  linestyle = '--', 
+  linewidth = 3,
+  label = 'WasmFX = Asyncify'
+)
+# plt.ylim(0, 1.2)
+
 
 
 if args.output:
-    plt.savefig(f"bench_results/{args.output}", bbox_inches="tight")
+    plt.savefig(f"{args.output}", bbox_inches="tight")
 else:
     plt.show()

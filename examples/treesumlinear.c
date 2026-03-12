@@ -64,10 +64,6 @@ node_t* build_tree(int32_t size, int32_t val) {
   if (i == 1) {
     return trees[0];
   }
-  if (i > 31) {
-    fprintf(stderr, "Too large a tree requested. Max size is 2^31 - 1");
-    return NULL;
-  }
   node_t *root = (node_t*)malloc(sizeof(node_t));
   root->tag = FORK;
   root->left = trees[0];
@@ -130,10 +126,15 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Wrong number of arguments. Expected: 1");
     return -1;
   }
+
   fiber_init();
 
-  int i = atoi(argv[1]);
-  node_t *tree = build_tree((int32_t)i, 0);
+  int size = atoi(argv[1]);
+  if (size > 0x7FFFFFFF) {
+    fprintf(stderr, "Too large a tree requested.");
+    return 1;
+  }
+  node_t *tree = build_tree((int32_t)size, 0);
 
   int32_t result = run(tree);
 

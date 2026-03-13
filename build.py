@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
+"""
+Buildscript that compiles wasm binaries and generates run scripts for fiber-c benchmarks.
+Usage:  `./build.py --help`
+        `./build.py --make-all`
+        `./build.py --make sieve1 --engines d8 wasmtime`
+        `./build.py --clean-all`
+"""
+
 import argparse
 import yaml
 import sys
-import os
+import subprocess
 from pathlib import Path
 
 # Import config
@@ -12,11 +20,11 @@ BENCHMARKS = config["BENCHMARKS_FIBER_C"]
 # Given a benchmark name, build .wasm files for both asyncify and wasmfx modes.
 # TODO: Move the output files to a more sensible directory, such as /benchfx/out/benchmark_name
 def build_benchmarks(benchmark: str):
-    os.system(f"make BENCHMARK={benchmark}")
+    subprocess.run(["make", f"BENCHMARK={benchmark}"])
 
 def clean_all():
-    os.system(f"make clean")
-    
+    subprocess.run(["make", "clean"])
+
 # ---- Script generation ----
 ENGINES = {
     "wasmtime": {
@@ -68,53 +76,47 @@ def generate_scripts(benchmark: str, engines: list[str]):
 def benchmark_validation(benchmarks):
     for benchmark in benchmarks:
         if benchmark not in BENCHMARKS:
-            print(f"Error: Benchmark '{benchmark}' is not recognized.")
-            sys.exit(1)
+            raise ValueError(f"Error: Benchmark '{benchmark}' is not recognized.")
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "-mode", "--mode", nargs="?", choices=["make-all", "clean-all"]
+        "--make-all", action="store_true", help="Build and generate scripts for all benchmarks"
     )
     parser.add_argument(
-        "-compile", "--compile", nargs="*", help="List of benchmarks", 
+        "--clean-all", action="store_true", help="Clean all build artefacts"
+    )
+    parser.add_argument(
+        "--make", nargs="*", help="Build and generate scripts for specified benchmark(s)", 
         default=None
     )
     parser.add_argument(
-        "-gen-scripts", "--gen-scripts", nargs="*", help="List of benchmarks", 
-        default=None
-    )
-    parser.add_argument(
-        "-engines", "--engines", nargs="*", choices=list(ENGINES.keys()), help="List of engines", 
+        "--engines", nargs="*", choices=list(ENGINES.keys()), help="Build and generate scripts for specified engine(s)", 
         default=ENGINES.keys()
     )
 
     args = parser.parse_args()
 
-    if not (args.mode or args.compile or args.gen_scripts):
-        print("Error: Must specify at least one of --mode, --compile, --gen-scripts")
+    if not (args.make_all or args.clean_all or args.make):
+        print("Error: Must specify at least one of --make-all, --clean-all, --make")
         sys.exit(1)
 
-    match args.mode:
-        case "make-all":
-            for benchmark in BENCHMARKS:
-                print("Building benchmark:", benchmark)
-                build_benchmarks(benchmark)
-                generate_scripts(benchmark,args.engines)
-                print("Built .wasm files and generated scripts for benchmark:", benchmark)
-        case "clean-all":
-            clean_all()
-        case None:
-            if args.compile:
-                benchmark_validation(args.compile)
-                for benchmark in args.compile:
-                    build_benchmarks(benchmark)
-                    print("Built .wasm files for benchmark:", benchmark)
-            if args.gen_scripts:
-                benchmark_validation(args.gen_scripts)
-                for benchmark in args.gen_scripts:
-                    generate_scripts(benchmark,args.engines)
-                    print("Generated scripts for benchmark:", benchmark)
+    if args.make_all:
+        for benchmark in BENCHMARKS:
+            print("Building benchmark:", benchmark)
+            build_benchmarks(benchmark)
+            generate_scripts(benchmark,args.engines)
+            print("Built .wasm files and generated scripts for benchmark:", benchmark)
+    elif args.clean_all:
+        clean_all()
+    elif args.make:
+        benchmark_validation(args.make)
+        for benchmark in args.make:
+            build_benchmarks(benchmark)
+            generate_scripts(benchmark,args.engines)
+            print("Built .wasm files and generated scripts for benchmark:", benchmark)
+    else:
+        raise ValueError("Error: Invalid arguments. Use --help for usage instructions.")
    
 if __name__ == "__main__":
     main()

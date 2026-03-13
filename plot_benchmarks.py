@@ -7,7 +7,10 @@
 #     "numpy",
 # ]
 # ///
-
+"""
+Script that generates a bar chart comparing the results of asyncify and wasmfx benchmarks.
+Usage: `python3 plot_benchmarks.py wasmfx_results.json asyncify_results.json --benchmarks itersum --engines wasmtime d8 -o results_dir`
+"""
 import argparse
 import json
 import pathlib
@@ -25,11 +28,11 @@ parser.add_argument(
     "files", nargs="+", type=pathlib.Path, help="JSON files with benchmark results"
 )
 parser.add_argument(
-        "-benchmarks", "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)", 
+        "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)", 
         default=all_benchmarks
     )
 parser.add_argument(
-        "-engines", "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)", 
+        "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)", 
         default=config["ENGINES"]
     )
 parser.add_argument("-o", "--output", help="Save image to the given filename")
@@ -93,9 +96,6 @@ plt.axhline(
   linewidth = 3,
   label = 'WasmFX = Asyncify'
 )
-# plt.ylim(0, 1.2)
-
-
 
 if args.output:
     plt.savefig(f"{args.output}", bbox_inches="tight")

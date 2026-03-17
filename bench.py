@@ -23,7 +23,7 @@ def call_buildscript(benchmark: str):
     
 def run_benchmarks(benchmarks, engines):
     # call hyperfine to run wasmfx benchmarks
-    subprocess.check_call = ["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", "bench_results/wasmfx_results.json", "--export-csv", "bench_results/wasmfx_results.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"]
+    subprocess.check_call (["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", "bench_results/wasmfx_results.json", "--export-csv", "bench_results/wasmfx_results.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"])
     # and now asyncify benchmarks
     subprocess.check_call(["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", "bench_results/asyncify_results.json", "--export-csv", "bench_results/asyncify_results.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_asyncify.sh"])
 

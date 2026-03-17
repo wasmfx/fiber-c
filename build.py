@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Buildscript that compiles wasm binaries and generates run scripts for fiber-c benchmarks.
+Buildscript that compiles wasm binaries for fiber-c benchmarks, and generates scripts to run them on the three wasm engines of interest 
+(d8, wasmtime, and wizard). The generated scripts are in /run-scripts and can be executed with `./run-scripts/benchmark_engine_mode.sh`, 
+e.g. `./run-scripts/sieve1_d8_wasmfx.sh`.
 Usage:  `./build.py --help`
         `./build.py --make-all`
         `./build.py --make sieve1 --engines d8 wasmtime`

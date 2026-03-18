@@ -28,9 +28,12 @@ V8_JS_LOADER : "load.mjs"
 
 # List of benchmarks
 # it's called `sieve1` because there is a different benchmark also called `sieve` in benchfx
-BENCHMARKS_FIBER_C : [ 
+BENCHMARKS_FIBER_C : [
+    "c10m",
     "itersum",
     "sieve1",
+    "skynet",
+    "state",
     "treesum"
   ]
 

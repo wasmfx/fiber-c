@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Buildscript that compiles wasm binaries for fiber-c benchmarks, and generates scripts to run them on the three wasm engines of interest 
-(d8, wasmtime, and wizard). The generated scripts are in /run-scripts and can be executed with `./run-scripts/benchmark_engine_mode.sh`, 
+Buildscript that compiles wasm binaries for fiber-c benchmarks, and generates scripts to run them on the three wasm engines of interest
+(d8, wasmtime, and wizard). The generated scripts are in /run-scripts and can be executed with `./run-scripts/benchmark_engine_mode.sh`,
 e.g. `./run-scripts/sieve1_d8_wasmfx.sh`.
 Usage:  `./build.py --help`
         `./build.py --make-all`
@@ -38,7 +38,7 @@ ENGINES = {
         "asyncify": "{prefix} setarch -R {d8} --experimental-wasm-wasmfx {v8_js_loader} -- {benchmark}_asyncify.wasm {arg}",
         "wasmfx": "{prefix} setarch -R {d8} --experimental-wasm-wasmfx {v8_js_loader} -- {benchmark}_wasmfx.wasm {arg}",
     },
-    
+
     "wizard": {
         "asyncify": "{prefix} setarch -R {wizard} {wizard_flags} --mode=jit {benchmark}_asyncify.wasm {arg}",
         "wasmfx": "{prefix} setarch -R {wizard} {wizard_flags} --mode=jit {benchmark}_wasmfx.wasm {arg}",
@@ -60,6 +60,7 @@ def generate_scripts(benchmark: str, engines: list[str]):
     else:
         arg = ""
 
+    Path("run-scripts").mkdir(exist_ok=True)
     for engine in engines:
         for mode, template in ENGINES[engine].items():
             script_name = f"{benchmark}_{engine}_{mode}.sh"
@@ -89,11 +90,11 @@ def main():
         "--clean-all", action="store_true", help="Clean all build artefacts"
     )
     parser.add_argument(
-        "--make", nargs="*", help="Build and generate scripts for specified benchmark(s)", 
+        "--make", nargs="*", help="Build and generate scripts for specified benchmark(s)",
         default=None
     )
     parser.add_argument(
-        "--engines", nargs="*", choices=list(ENGINES.keys()), help="Build and generate scripts for specified engine(s)", 
+        "--engines", nargs="*", choices=list(ENGINES.keys()), help="Build and generate scripts for specified engine(s)",
         default=ENGINES.keys()
     )
 
@@ -119,6 +120,6 @@ def main():
             print("Built .wasm files and generated scripts for benchmark:", benchmark)
     else:
         raise ValueError("Error: Invalid arguments. Use --help for usage instructions.")
-   
+
 if __name__ == "__main__":
     main()

@@ -25,6 +25,7 @@ out/$(BENCHMARK)_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasm
 out/$(BENCHMARK)_asyncify.cwasm: out/$(BENCHMARK)_asyncify.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $(BENCHMARK)_asyncify.wasm -o $(BENCHMARK)_asyncify.cwasm
 
+
 out/$(BENCHMARK)_wasmfx.cwasm: out/$(BENCHMARK)_wasmfx.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $(BENCHMARK)_wasmfx.wasm -o $(BENCHMARK)_wasmfx.cwasm
 

@@ -31,6 +31,7 @@ V8_JS_LOADER : "load.mjs"
 BENCHMARKS_FIBER_C : [
     "c10m",
     "itersum",
+    "pi",
     "sieve1",
     "skynet",
     "state",

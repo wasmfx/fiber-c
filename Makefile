@@ -40,3 +40,4 @@ clean:
 	rm -f src/wasmfx/imports.wat src/wasmfx/imports_switch.wat
 	rm -f *.sh
 	rm -f *.cwasm
+	rm -rf run-scripts out

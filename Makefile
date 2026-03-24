@@ -16,6 +16,9 @@ out/$(BENCHMARK)_asyncify.wasm: examples/$(BENCHMARK).c inc/fiber.h src/asyncify
 	$(ASYNCIFY) $(@:.wasm=.pre.wasm) -o $@
 	chmod +x $@
 
+fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
+	$(WASM_INTERP) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
+
 fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 	$(WASM_INTERP) -d -i $< -o $@
 
@@ -24,9 +27,13 @@ out/$(BENCHMARK)_wasmfx.wasm: examples/$(BENCHMARK).c inc/fiber.h src/wasmfx/imp
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
+out/$(BENCHMARK)_switch_wasmfx.wasm: examples/$(BENCHMARK).c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_switch_wasmfx_imports.wasm
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)
+	$(WASM_MERGE) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
+	chmod +x $@
+
 out/$(BENCHMARK)_asyncify.cwasm: out/$(BENCHMARK)_asyncify.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
-
 
 out/$(BENCHMARK)_wasmfx.cwasm: out/$(BENCHMARK)_wasmfx.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@

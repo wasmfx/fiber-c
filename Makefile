@@ -11,13 +11,13 @@ endif
 .PHONY: all
 all: out/$(BENCHMARK)_asyncify.wasm out/$(BENCHMARK)_wasmfx.wasm out/$(BENCHMARK)_asyncify.cwasm out/$(BENCHMARK)_wasmfx.cwasm
 
-out/$(BENCHMARK)_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/$(BENCHMARK).c
-	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) examples/$(BENCHMARK).c -o $(BENCHMARK)_asyncify.pre.wasm
+out/$(BENCHMARK)_asyncify.wasm: examples/$(BENCHMARK).c inc/fiber.h src/asyncify/asyncify_impl.c
+	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) $< -o $(BENCHMARK)_asyncify.pre.wasm
 	$(ASYNCIFY) $(BENCHMARK)_asyncify.pre.wasm -o $@
 	chmod +x $@
 
-out/$(BENCHMARK)_wasmfx.wasm: inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c examples/$(BENCHMARK).c
-	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/$(BENCHMARK).c -o $(BENCHMARK)_wasmfx.pre.wasm
+out/$(BENCHMARK)_wasmfx.wasm: examples/$(BENCHMARK).c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(BENCHMARK)_wasmfx.pre.wasm
 	$(WASM_INTERP) -d -i src/wasmfx/imports.wat -o fiber_wasmfx_imports.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(BENCHMARK)_wasmfx.pre.wasm "main" -o $@
 	chmod +x $@

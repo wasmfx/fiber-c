@@ -12,6 +12,9 @@ endif
 BENCHMARKS=c10m hello itersum pi sieve simple skynet state treesum treesumlinear
 # treesum_switch itersum_switch hello_switch
 
+# This strange invocation tells make not to delete "intermediate products".
+.SECONDARY:
+
 all: $(patsubst %,out/%_asyncify.wasm,$(BENCHMARKS)) $(patsubst %,out/%_wasmfx.wasm,$(BENCHMARKS)) $(patsubst %,out/%_asyncify.cwasm,$(BENCHMARKS)) $(patsubst %,out/%_wasmfx.cwasm,$(BENCHMARKS))
 
 out/%_asyncify.wasm: examples/%.c inc/fiber.h src/asyncify/asyncify_impl.c out

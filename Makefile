@@ -15,9 +15,12 @@ BENCHMARKS=c10m hello itersum pi sieve simple skynet state treesum treesumlinear
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:
 
-all: $(patsubst %,out/%_asyncify.wasm,$(BENCHMARKS)) $(patsubst %,out/%_wasmfx.wasm,$(BENCHMARKS)) $(patsubst %,out/%_asyncify.cwasm,$(BENCHMARKS)) $(patsubst %,out/%_wasmfx.cwasm,$(BENCHMARKS))
+all: $(BENCHMARKS)
 
-out/%_asyncify.wasm: examples/%.c inc/fiber.h src/asyncify/asyncify_impl.c out
+%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm
+	@echo Made $@ #from $^
+
+out/%_asyncify.wasm: examples/%.c inc/fiber.h src/asyncify/asyncify_impl.c | out
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(ASYNCIFY) $(@:.wasm=.pre.wasm) -o $@
 	chmod +x $@
@@ -28,12 +31,12 @@ fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
 fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 	$(WASM_INTERP) -d -i $< -o $@
 
-out/%_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm out
+out/%_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
-out/%_switch_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_switch_wasmfx_imports.wasm out
+out/%_switch_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_switch_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(WASM_MERGE) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@

@@ -5,6 +5,7 @@ WASMFX_PRESERVE_SHADOW_STACK?=1
 # Only relevant if WASMFX_PRESERVE_SHADOW_STACK is 1
 WASMFX_CONT_SHADOW_STACK_SIZE?=65536
 ASYNCIFY=../binaryen/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 --asyncify -g
+WASM_OPT=../binaryen/bin/wasm-opt --enable-nontrapping-float-to-int --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 -g
 WASICC=../wasi-sdk-*/bin/clang
 WASIFLAGS=-std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes -O3 -I inc -g
 WASM_INTERP=../stack-switching/interpreter/wasm
@@ -37,7 +38,7 @@ racecar.wasm: inc/fiber_switch.h src/asyncify/asyncify_switch_impl.c examples/ra
 	$(ASYNCIFY) racecar.pre.wasm -o $@
 	chmod +x $@
 
-hello_wasmfx.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/hello.c
+hello_wasmfx.unopt.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/hello.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/hello.c -o hello_wasmfx.pre.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" hello_wasmfx.pre.wasm "main" -o $@
 	chmod +x $@
@@ -50,7 +51,7 @@ sieve_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/sieve.c
 	$(ASYNCIFY) sieve_asyncfiy.pre.wasm -o $@
 	chmod +x $@
 
-sieve_wasmfx.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/sieve.c
+sieve_wasmfx.unopt.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/sieve.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/sieve.c -o sieve_wasmfx.pre.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" sieve_wasmfx.pre.wasm "main" -o $@
 	chmod +x $@
@@ -63,7 +64,7 @@ itersum_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/itersum
 	$(ASYNCIFY) itersum_asyncfiy.pre.wasm -o $@
 	chmod +x $@
 
-itersum_wasmfx.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/itersum.c
+itersum_wasmfx.unopt.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/itersum.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/itersum.c -o itersum_wasmfx.pre.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" itersum_wasmfx.pre.wasm "main" -o $@
 	chmod +x $@
@@ -76,7 +77,7 @@ treesum_asyncify.wasm: inc/fiber.h src/asyncify/asyncify_impl.c examples/treesum
 	$(ASYNCIFY) treesum_asyncfiy.pre.wasm -o $@
 	chmod +x $@
 
-treesum_wasmfx.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/treesum.c
+treesum_wasmfx.unopt.wasm: inc/fiber.h fiber_wasmfx_imports.wasm src/wasmfx/wasmfx_impl.c examples/treesum.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) examples/treesum.c -o treesum_wasmfx.pre.wasm
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" treesum_wasmfx.pre.wasm "main" -o $@
 	chmod +x $@
@@ -105,6 +106,10 @@ treesum_switch_asyncify.wasm: inc/fiber_switch.h src/asyncify/asyncify_switch_im
 treesum_switch_wasmfx.wasm: inc/fiber_switch.h fiber_switch_wasmfx_imports.wasm src/wasmfx/wasmfx_switch_impl.c examples/treesum_switch.c
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_switch_impl.c $(WASIFLAGS) examples/treesum_switch.c -o treesum_switch_wasmfx.pre.wasm
 	$(WASM_MERGE) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" treesum_switch_wasmfx.pre.wasm "main" -o $@
+	chmod +x $@
+
+%.wasm: %.unopt.wasm
+	$(WASM_OPT) $< -o $@
 	chmod +x $@
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp

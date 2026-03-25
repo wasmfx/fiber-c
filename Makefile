@@ -31,9 +31,13 @@ fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
 fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 	$(WASM_INTERP) -d -i $< -o $@
 
-out/%_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
+out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(WASM_MERGE) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
+	chmod +x $@
+
+out/%_wasmfx.wasm: out/%_wasmfx.unopt.wasm
+	$(WASM_OPT) $< -o $@
 	chmod +x $@
 
 out/%_switch_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_switch_wasmfx_imports.wasm | out
@@ -41,10 +45,7 @@ out/%_switch_wasmfx.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wa
 	$(WASM_MERGE) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
-out/%_asyncify.cwasm: out/%_asyncify.wasm
-	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
-
-out/%_wasmfx.cwasm: out/%_wasmfx.wasm
+out/%.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp

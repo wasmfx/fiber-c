@@ -1,44 +1,39 @@
-PREFIX : "#!/bin/bash\n"
-
 # List of valid engines
 ENGINES : [ "d8", "wasmtime", "wizard" ]
 
-# Paths to engines
+# Paths to engines and engine-specific options
+# Wasmtime
 WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"
+WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching"
+
+# V8
 D8_PATH : "/opt/wasmfx/v8/v8/out/x64.release/d8"
+D8_OPTIONS : "--experimental-wasm-wasmfx load.mjs --"
+
+# Wizard
 WIZARD_PATH : "/opt/wasmfx/wizard-engine/bin/wizeng.x86-64-linux"
-WIZARD_FLAGS : "--ext:stack-switching --ext:gc --ext:exception-handling --ext:function-references --stack-size=2097152"
-
-# Paths for building benchmarks
-ASYNCIFY_DEFAULT_STACK_SIZE: 2097152
-STACK_POOL_SIZE: 0
-WASMFX_CONT_TABLE_INITIAL_CAPACITY: 1024
-WASMFX_PRESERVE_SHADOW_STACK: 1
-WASMFX_CONT_SHADOW_STACK_SIZE: 65536
-ASYNCIFY : "/opt/wasmfx/binaryen/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching -O2 --asyncify"
-WASICC : "/opt/wasmfx/wasi-sdk/build/install/bin/clang"
-WASIFLAGS : "--sysroot=/opt/wasmfx/wasi-sdk/build/install/share/wasi-sysroot -std=c17 -Wall -Wextra -Werror -Wpedantic -Wno-strict-prototypes  -O3 -I inc"
-WASM_INTERP : "/opt/wasmfx/specfx/interpreter/wasm"
-WASM_MERGE : "/opt/wasmfx/binaryen/bin/wasm-merge --enable-multimemory --enable-exception-handling --enable-reference-types --enable-multivalue --enable-bulk-memory --enable-gc --enable-stack-switching --enable-nontrapping-float-to-int"
-SHADOW_STACK_FLAG : ""
-
-# Paths to imports
-WASMFX_IMPORTS : "wasmfx_imports.wasm"
-V8_JS_LOADER : "load.mjs"
+WIZARD_OPTIONS : "--ext:stack-switching --ext:gc --stack-size=65536 --mode=jit"
 
 # List of benchmarks
-# it's called `sieve1` because there is a different benchmark also called `sieve` in benchfx
 BENCHMARKS_FIBER_C : [
-    "c10m",
     "itersum",
-    "pi",
-    "sieve1",
-    "skynet",
+    "sieve",
     "state",
-    "treesum"
+    "treesum",
+    #"treesumlinear",
+    "c10m",
+    "pi",
+    "skynet",
   ]
 
 # Arguments for benchmarks
 ITERSUM_ARGS : 1000000
 TREESUM_ARGS : 25
-SIEVE1_ARGS : 2000
+SIEVE_ARGS : 2000
+
+# Wasmtime stack pool sizes for benchmarks that may do better with a different number from the default 1024 stacks
+WASMTIME_STACK_POOL_SIZES : {
+    "c10m": 10000,
+    "sieve": 2000, # this needs to be equal to SIEVE_ARGS
+    "skynet" : 6,
+}

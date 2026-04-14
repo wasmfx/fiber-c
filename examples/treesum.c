@@ -11,20 +11,22 @@ typedef struct node {
     int32_t val;
     // Fork
     struct {
+      int height;
       struct node *left;
       struct node *right;
     };
   };
 } node_t;
 
-node_t* build_tree(int32_t depth, int32_t val) {
+node_t* build_tree(int32_t height, int32_t val) {
   node_t *node = (node_t*)malloc(sizeof(node_t));
-  if (depth == 0) {
+  if (height == 0) {
     node->tag = LEAF;
     node->val = val;
   } else {
     node->tag = FORK;
-    node_t *subtree = build_tree(depth - 1, val + 1);
+    node->height = height;
+    node_t *subtree = build_tree(height - 1, val + 1);
     node->left = subtree;
     node->right = subtree;
   }
@@ -54,7 +56,13 @@ void walk_tree(node_t *node) {
 }
 
 void* tree_walker(void *node) {
-  walk_tree((node_t*)node);
+  const int target_iterations = 1 << 25;
+  const int tree_leaves = (1 << ((node_t*)node)->height);
+  const int reps = target_iterations / tree_leaves;
+  // Run "reps" times to ensure that we always do 32M iterations, regardless of the tree height.
+  for (int i = 0; i < reps; i++) {
+    walk_tree((node_t*)node);
+  }
   return NULL;
 }
 
@@ -81,8 +89,8 @@ int main(int argc, char** argv) {
   }
   fiber_init();
 
-  int i = atoi(argv[1]);
-  node_t *tree = build_tree((int32_t)i, 0);
+  int height = atoi(argv[1]);
+  node_t *tree = build_tree((int32_t)height, 0);
 
   int32_t result = run(tree);
 

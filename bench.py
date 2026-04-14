@@ -21,11 +21,11 @@ all_engines = config["ENGINES"]
 def call_buildscript():
     subprocess.check_call(["./build.py"])
     
-def run_benchmarks(benchmarks, engines):
+def run_benchmarks(benchmarks, engines, filename):
     # call hyperfine to run wasmfx benchmarks
-    subprocess.check_call (["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", "bench_results/wasmfx_results.json", "--export-csv", "bench_results/wasmfx_results.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"])
+    subprocess.check_call (["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", f"bench_results/{filename}_wasmfx.json", "--export-csv", f"bench_results/{filename}_wasmfx.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"])
     # and now asyncify benchmarks
-    subprocess.check_call(["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", "bench_results/asyncify_results.json", "--export-csv", "bench_results/asyncify_results.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_asyncify.sh"])
+    subprocess.check_call(["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", f"bench_results/{filename}_asyncify.json", "--export-csv", f"bench_results/{filename}_asyncify.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_asyncify.sh"])
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -36,6 +36,9 @@ def main():
     parser.add_argument(
         "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)", 
         default=all_engines
+    )
+    parser.add_argument("--output", "-o", help="Filename to save results to. Default is `results`, such that is output live in bench_results/results_{backend}",
+        default=f"results"
     )
     args = parser.parse_args()
 
@@ -48,15 +51,11 @@ def main():
     # build and run everything
     call_buildscript()
     os.makedirs("bench_results", exist_ok=True)
-    run_benchmarks(args.benchmarks, args.engines)
-
+    run_benchmarks(args.benchmarks, args.engines, args.output)
      # make chart
-    os.system(f"python3 plot_benchmarks.py bench_results/wasmfx_results.json bench_results/asyncify_results.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/results")
-    # make a copy of the chart in the root directory of ehop machine for webserver reasons
-    shutil.copytree("bench_results", "/opt/wasmfx/bench_results_page", dirs_exist_ok=True)
+    os.system(f"python3 plot_benchmarks.py bench_results/{args.output}_wasmfx.json bench_results/{args.output}_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{args.output}")
     # clean up .wasm files and scripts
     subprocess.check_call(["make", "clean"])
 
 if __name__ == "__main__":
     main()
-    

@@ -7,7 +7,7 @@ WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"
 WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching"
 
 # V8
-D8_PATH : "/opt/wasmfx/v8/v8/out/x64.release/d8"
+D8_PATH : "/opt/wasmfx/v8/out/x64.release/d8"
 D8_OPTIONS : "--experimental-wasm-wasmfx load.mjs --"
 
 # Wizard

@@ -36,7 +36,7 @@ fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 	$(WASM_INTERP) -d -i $< -o $@
 
 fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
-	$(WASM_INTERP_SWITCH) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
+	$(WASM_INTERP) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
 
 out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASIFLAGS) $< -o $(@:.wasm=.pre.wasm)

@@ -70,34 +70,37 @@ x = [x for x in np.arange((len(benches) + 1) * len(engines)) if ((x+1) % (len(be
 width = 1
 bar_colors = ['tab:blue', 'tab:orange', 'tab:cyan', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray']
 
-fig, ax = plt.subplots()
+def make_chart(data, ratio_line:bool, title:str, xlabel:str, ylabel:str):
+    fig, ax = plt.subplots()
 
-for i in range(len(ratio)):
-    ax.bar(x[i], ratio[i], width, label=benches[i % len(benches)], color=bar_colors[i % len(benches)])
+    for i in range(len(data)):
+        ax.bar(x[i], data[i], width, label=benches[i % len(benches)], color=bar_colors[i % len(benches)])
 
-# pad out list of engines to match length of commands, so x-axis labels are engines
-axis_labels = np.repeat(engines, len(benches))
-ax.set_xticks(x, axis_labels)
+    # pad out list of engines to match length of commands, so x-axis labels are engines
+    axis_labels = np.repeat(engines, len(benches))
+    ax.set_xticks(x, axis_labels)
 
-# Keeps every nth label, make the rest invisible
-n = len(benches)
-[l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != math.ceil(n/2) - 1]
+    # Keeps every nth label, make the rest invisible
+    n = len(benches)
+    [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != math.ceil(n/2) - 1]
 
-ax.grid(visible=True, axis="y")
-plt.title("Benchmark results (Asyncify time / WasmFX time)")
-plt.xlabel("Engine")
-plt.ylabel("Speedup (relative to Asyncify)")
-plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
-# TODO: make it display the label
-plt.axhline(
-  y=1.0, 
-  color = 'r',
-  linestyle = '--', 
-  linewidth = 3,
-  label = 'WasmFX = Asyncify'
-)
+    ax.grid(visible=True, axis="y")
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
+    if (ratio_line):
+        # add a horizontal line at y=1 to indicate where wasmfx and asyncify are equal
+        plt.axhline(
+            y=1.0, 
+            color = 'r',
+            linestyle = '--', 
+            linewidth = 3,
+            label = 'WasmFX = Asyncify'
+            )
+    if args.output:
+        plt.savefig(f"{args.output}", bbox_inches="tight")
+    else:
+        plt.show()
 
-if args.output:
-    plt.savefig(f"{args.output}", bbox_inches="tight")
-else:
-    plt.show()
+make_chart(ratio, True, "Benchmark results (Asyncify time / WasmFX time)", "Engine", "Speedup (relative to Asyncify)" )

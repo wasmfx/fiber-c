@@ -29,15 +29,12 @@ def run_benchmarks(benchmarks, engines, filename):
     subprocess.check_call(["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", f"bench_results/{filename}_asyncify.json", "--export-csv", f"bench_results/{filename}_asyncify.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_asyncify.sh"])
 
 def get_binary_sizes(benchmarks,filename):
-    data={}
+    data=[]
     for benchmark in benchmarks:
         wasmfx_size = os.path.getsize(f"out/{benchmark}_wasmfx.wasm")
         asyncify_size = os.path.getsize(f"out/{benchmark}_asyncify.wasm")
-        entry = {
-            "wasmfx": wasmfx_size,
-            "asyncify": asyncify_size
-        }
-        data[benchmark] = entry
+        entry = [ wasmfx_size, asyncify_size ]
+        data.append(entry)
     with open(f"bench_results/{filename}.json", "w") as f:
         json.dump(data,f)
 
@@ -65,10 +62,13 @@ def main():
     # build and run everything
     call_buildscript()
     os.makedirs("bench_results", exist_ok=True)
+    os.makedirs("bench_results/charts", exist_ok=True)
     get_binary_sizes(args.benchmarks,f"{args.output}_binary_sizes")
     run_benchmarks(args.benchmarks, args.engines, args.output)
-     # make chart
-    os.system(f"python3 plot_benchmarks.py bench_results/{args.output}_wasmfx.json bench_results/{args.output}_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{args.output}")
+    # make binary size chart
+    os.system(f"python3 plot_binary_sizes.py bench_results/{args.output}_binary_sizes.json --benchmarks {' '.join(args.benchmarks)} -o bench_results/charts/{args.output}")
+    # make runtime chart
+    os.system(f"python3 plot_benchmarks.py bench_results/{args.output}_wasmfx.json bench_results/{args.output}_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/charts/{args.output}")
     # clean up .wasm files and scripts
     subprocess.check_call(["make", "clean"])
 

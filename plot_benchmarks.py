@@ -13,17 +13,14 @@ Script that generates:
     2. $number_of_engines$ bar charts displaying the raw runtime/binary size/etc data for each engine
 Usage: 
     `python3 plot_benchmarks.py results_wasmfx.json results_asyncify.json --benchmarks itersum --engines wasmtime d8 -o results_dir`
-    `todo: sample usage for making charts of binary sizes`
 """
+
 import argparse
 import json
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 import math
-
-config = yaml.safe_load(open("config.yml"))
 
 # deal with inputs
 parser = argparse.ArgumentParser(description=__doc__)
@@ -113,7 +110,9 @@ for i, engine in enumerate(engines):
     engine_data = data[(i)*(len(benches)):(i+1)*(len(benches))].flatten()
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
-    bar_loc = [x for x in np.arange((len(benches) + 1) * 2) if ((x+1) % 3) != 0]
+    # Logic: for each benchmark we allocate three bars, where the third one is a gap,
+    #   so we don't have multiples of 3 in our list of x-values.
+    bar_loc = [x for x in np.arange(len(benches) * 3) if ((x+1) % 3) != 0]
 
     # Plot data
     fig, ax = plt.subplots()
@@ -132,13 +131,11 @@ for i, engine in enumerate(engines):
     ax.grid(visible=True, axis="y")
     plt.title(f"Benchmark results (absolute times) for {engine}")
     plt.xlabel("Benchmark")
-    plt.ylabel("Time (milliseconds)")
+    plt.ylabel("Time (seconds)")
     plt.legend(['WasmFX', 'Asyncify'], bbox_to_anchor=(1.3, 1), loc="upper right")
 
     # Export figure
     if args.output:
-        plt.savefig(f"{args.output}_{engine}_absolute", bbox_inches="tight")
+        plt.savefig(f"{args.output}_absolute_{engine}", bbox_inches="tight")
     else:
         plt.show()
-
-# todo: binary sizes chart

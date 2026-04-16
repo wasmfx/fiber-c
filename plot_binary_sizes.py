@@ -69,6 +69,6 @@ plt.axhline(
 
 # Export figure
 if args.output:
-    plt.savefig(f"{args.output}_relative_binary_sizes", bbox_inches="tight")
+    plt.savefig(f"{args.output}/relative_binary_sizes", bbox_inches="tight")
 else:
     plt.show()

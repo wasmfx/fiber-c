@@ -95,7 +95,7 @@ plt.axhline(
 
 # Export figure
 if args.output:
-    plt.savefig(f"{args.output}_relative", bbox_inches="tight")
+    plt.savefig(f"{args.output}/relative", bbox_inches="tight")
 else:
     plt.show()
 
@@ -136,6 +136,6 @@ for i, engine in enumerate(engines):
 
     # Export figure
     if args.output:
-        plt.savefig(f"{args.output}_absolute_{engine}", bbox_inches="tight")
+        plt.savefig(f"{args.output}/absolute_{engine}", bbox_inches="tight")
     else:
         plt.show()

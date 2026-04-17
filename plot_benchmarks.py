@@ -11,6 +11,13 @@
 Script that generates:
     1. A bar chart displaying the relative performance of asyncify and wasmfx benchmarks, grouped by engine
     2. $number_of_engines$ bar charts displaying the raw runtime/binary size/etc data for each engine
+    3. $number_of_benchmarks$ bar charts displaying the raw runtime/binary size/etc data for each benchmark
+
+Where
+    (1) is saved in results_dir/relative/relative.png, 
+    (2) is saved in results_dir/absolute_engines/absolute_{engine}.png, 
+    (3) is saved in results_dir/absolute_benchmarks/absolute_{benchmark}.png
+
 Usage: 
     `python3 plot_benchmarks.py results_wasmfx.json results_asyncify.json --benchmarks itersum --engines wasmtime d8 -o results_dir`
 """
@@ -95,12 +102,12 @@ plt.axhline(
 
 # Export figure
 if args.output:
-    plt.savefig(f"{args.output}/relative", bbox_inches="tight")
+    plt.savefig(f"{args.output}/relative/relative", bbox_inches="tight")
 else:
     plt.show()
 
 # --------------
-# ----- Next 3 (or rather, len(engines)) charts: absolute times for asyncify and wasmfx for each benchmark, per engine -----
+# ----- Next 3 (or rather, len(engines)) charts: absolute times for asyncify and wasmfx for each benchmark, grouped by engine -----
 # --------------
 
 # We want a different chart for each engine where bars are grouped by benchmarks, 
@@ -124,7 +131,6 @@ for i, engine in enumerate(engines):
     ax.set_xticks(bar_loc, axis_labels)
 
     # Keeps every other label, make the rest invisible
-    n = len(benches)
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
 
     # Readability features
@@ -136,6 +142,49 @@ for i, engine in enumerate(engines):
 
     # Export figure
     if args.output:
-        plt.savefig(f"{args.output}/absolute_{engine}", bbox_inches="tight")
+        plt.savefig(f"{args.output}/absolute_engines/absolute_{engine}", bbox_inches="tight")
+    else:
+        plt.show()
+
+# --------------
+# ----- Next n (or rather, len(benches)) charts: absolute times for asyncify and wasmfx, grouped by benchmark -----
+# --------------
+
+# Now we want a different chart for each benchmark where bars are grouped by engines
+for i, benchmark in enumerate(benches):
+    # Get array of data from this benchmark
+    # There should always be 2 * len(engines) entries for each benchmark
+    bench_data = []
+    for j in range(len(engines)):
+        bench_data.append(data[i + j*len(benches)][0]) # wasmfx time for this benchmark and engine
+        bench_data.append(data[i + j*len(benches)][1]) # asyncify time for this benchmark and engine
+    
+    # Set x values for bar locations, with one group of (two) bars for each benchmark
+    # This is the same as the previous chart except we have len(engines) groups of bars
+    bar_loc = [x for x in np.arange(len(engines) * 3) if ((x+1) % 3) != 0]
+
+    # Plot data
+    fig, ax = plt.subplots()
+    for i in range(len(bench_data)):
+        ax.bar(bar_loc[i], bench_data[i], width, label=engines[i % len(engines)], color=bar_colors[i % 2])
+    
+    # Pad out list of benchmarks to match number of engines
+    axis_labels = np.repeat(engines, 2)
+    ax.set_xticks(bar_loc, axis_labels)
+
+    # Keeps every other label, make the rest invisible
+    n = len(engines)
+    [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+
+    # Readability features
+    ax.grid(visible=True, axis="y")
+    plt.title(f"Benchmark results (absolute times) for {benchmark}")
+    plt.xlabel("Engine")
+    plt.ylabel("Time (seconds)")
+    plt.legend(['WasmFX', 'Asyncify'], bbox_to_anchor=(1.3, 1), loc="upper right")
+
+    # Export figure
+    if args.output:
+        plt.savefig(f"{args.output}/absolute_benchmarks/absolute_{benchmark}", bbox_inches="tight")
     else:
         plt.show()

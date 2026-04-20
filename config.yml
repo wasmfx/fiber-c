@@ -24,16 +24,21 @@ BENCHMARKS_FIBER_C : [
     "c10m",
     "pi",
     "skynet",
+    "itersum_switch",
+    "treesum_switch",
   ]
 
 # Arguments for benchmarks
 ITERSUM_ARGS : 1000000
 TREESUM_ARGS : 25
 SIEVE_ARGS : 2000
+ITERSUM_SWITCH_ARGS : 1000000
+TREESUM_SWITCH_ARGS : 25
 
 # Wasmtime stack pool sizes for benchmarks that may do better with a different number from the default 1024 stacks
 WASMTIME_STACK_POOL_SIZES : {
     "c10m": 10000,
     "sieve": 2000, # this needs to be equal to SIEVE_ARGS
     "skynet" : 6,
+    "itersum" : 1,
 }

@@ -22,7 +22,7 @@ def build_benchmarks():
 
 # ---- Script generation ----
 
-SCRIPT_TEMPLATE = f"#!/bin/bash\n setarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}} {{arg}}"
+SCRIPT_TEMPLATE = f"#!/bin/bash\n setarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}"
 
 def make_script(filename: Path, content: str):
     filename.write_text(content)
@@ -40,12 +40,8 @@ def wasmtime_stack_pool_size_upd(benchmark: str):
 
 def generate_scripts(benchmark: str, engines: list[str]):
     # Set arguments for benchmarks that need them
-    if benchmark in {"itersum", "itersum_switch"}:
-        arg = config["ITERSUM_ARGS"]
-    elif benchmark in {"treesum", "treesum_switch"}:
-        arg = config["TREESUM_ARGS"]
-    elif benchmark in {"sieve", "sieve_switch"}:
-        arg = config["SIEVE_ARGS"]
+    if benchmark in config["BENCHMARK_ARGS"].keys():
+        arg = f" {config['BENCHMARK_ARGS'][benchmark]}"
     else:
         arg = ""
 

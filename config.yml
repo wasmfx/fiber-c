@@ -4,7 +4,7 @@ ENGINES : [ "d8", "wasmtime", "wizard" ]
 # Paths to engines and engine-specific options
 # Wasmtime
 WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"
-WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching"
+WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching,total-stacks=<STACK_POOL_SIZE>"
 
 # V8
 D8_PATH : "/opt/wasmfx/v8/out/x64.release/d8"
@@ -40,5 +40,4 @@ WASMTIME_STACK_POOL_SIZES : {
     "c10m": 10000,
     "sieve": 2000, # this needs to be equal to SIEVE_ARGS
     "skynet" : 6,
-    "itersum" : 1,
 }

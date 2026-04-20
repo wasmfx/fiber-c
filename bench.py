@@ -34,7 +34,11 @@ def get_binary_sizes(benchmarks,filename, path):
     for benchmark in benchmarks:
         wasmfx_size = os.path.getsize(f"out/{benchmark}_wasmfx.wasm")
         asyncify_size = os.path.getsize(f"out/{benchmark}_asyncify.wasm")
-        entry = [ wasmfx_size, asyncify_size ]
+        entry = {
+            "benchmark": benchmark,
+            "wasmfx": wasmfx_size,
+            "asyncify": asyncify_size,
+            }
         data.append(entry)
     with open(f"bench_results/{path}/{filename}.json", "w") as f:
         json.dump(data,f)

@@ -32,7 +32,10 @@ benches = args.benchmarks
 with open(args.files) as f:
     data = json.load(f)
 
-data = np.array(data)
+# The data should be a json of shape {"benchmark": str, "wasmfx": int, "asyncify": int}
+# We will now remove the "benchmark" field because we already have the benchmark names in the `benches` variable,
+# and stick the "wasmfx" and "asyncify" fields into a numpy array for easier manipulation
+data = np.array([[entry["wasmfx"], entry["asyncify"]] for entry in data])
 
 # Get the chart data: divide first column by second column to obtain wasmfx / asyncify ratio
 ratio = np.divide(data[:, 1], data[:, 0])

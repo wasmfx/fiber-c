@@ -4,7 +4,7 @@ ENGINES : [ "d8", "wasmtime", "wizard" ]
 # Paths to engines and engine-specific options
 # Wasmtime
 WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"
-WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching"
+WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching,total-stacks=<STACK_POOL_SIZE>"
 
 # V8
 D8_PATH : "/opt/wasmfx/v8/out/x64.release/d8"
@@ -28,17 +28,18 @@ BENCHMARKS_FIBER_C : [
     "treesum_switch",
   ]
 
-# Arguments for benchmarks
-ITERSUM_ARGS : 1000000
-TREESUM_ARGS : 25
-SIEVE_ARGS : 2000
-ITERSUM_SWITCH_ARGS : 1000000
-TREESUM_SWITCH_ARGS : 25
+# Arguments for benchmarks that require arguments
+BENCHMARK_ARGS : {
+    "itersum": 1000000,
+    "treesum": 25,
+    "sieve": 2000,
+    "itersum_switch": 1000000,
+    "treesum_switch": 25,
+}
 
 # Wasmtime stack pool sizes for benchmarks that may do better with a different number from the default 1024 stacks
 WASMTIME_STACK_POOL_SIZES : {
     "c10m": 10000,
-    "sieve": 2000, # this needs to be equal to SIEVE_ARGS
+    "sieve": 2000, # this needs to be equal to BENCHMARK_ARGS["sieve"]
     "skynet" : 6,
-    "itersum" : 1,
 }

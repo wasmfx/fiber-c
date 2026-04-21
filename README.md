@@ -23,7 +23,7 @@ To compile the benchmarks programs in `examples` from C to Wasm binaries, you wi
 1. [WASI-SDK 30.0](https://github.com/webassembly/wasi-sdk)
 2. [Wasm reference interpreter from the stack-switching proposal](https://github.com/WebAssembly/stack-switching/tree/main/interpreter)
 3. [Up-to-date Binaryen](https://github.com/WebAssembly/binaryen)
-4. [Wasmfxtime](https://github.com/wasmfx/wasmfxtime), a fork of Wasmtime extended with support for the WasmFX instruction set.
+4. A Wasm execution engine with support for the stack switching instruction set, e.g. [Wasmtime](https://github.com/bytecodealliance/wasmtime), [V8 canary](https://chromium.googlesource.com/v8/v8/+/canary), or [Wizard](https://github.com/titzer/wizard-engine).
 
 **Note**: You will also need [upstream wasmtime](https://github.com/bytecodealliance/wasmtime) 
 to build the benchmarks targeting the `switch` instruction.

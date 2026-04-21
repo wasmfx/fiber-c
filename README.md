@@ -25,8 +25,6 @@ To compile the benchmarks programs in `examples` from C to Wasm binaries, you wi
 3. [Up-to-date Binaryen](https://github.com/WebAssembly/binaryen)
 4. A Wasm execution engine with support for the stack switching instruction set, e.g. [Wasmtime](https://github.com/bytecodealliance/wasmtime), [V8 canary](https://chromium.googlesource.com/v8/v8/+/canary), or [Wizard](https://github.com/titzer/wizard-engine).
 
-**Note**: You will also need [upstream wasmtime](https://github.com/bytecodealliance/wasmtime) 
-to build the benchmarks targeting the `switch` instruction.
 
 Please install and build these packages according to their docs. Please also make sure they are installed in the same root directory, 
 then update the `ROOT` field of `make.config`.
@@ -47,7 +45,7 @@ The benchmarking script in `bench.py` can build, run, and time each benchmark. T
 
 1. Install and update engine dependencies 
     
-    1. Wasmfxtime
+    1. Wasmtime
     2. [V8](https://v8.dev/docs/build)
     3. [Wizard](https://github.com/titzer/wizard-engine/tree/master)
 

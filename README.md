@@ -29,6 +29,8 @@ To compile the benchmarks programs in `examples` from C to Wasm binaries, you wi
 Please install and build these packages according to their docs. Please also make sure they are installed in the same root directory, 
 then update the `ROOT` field of `make.config`.
 
+**Note:** Instead of installing these dependencies manually, you can use the docker container build at http://github.com/wasmfx/benchtainer and run compilation/benchmarking runs within that container. See instructions therein.
+
 After this, you should be able to run
 ```
 make all

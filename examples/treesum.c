@@ -56,9 +56,9 @@ void walk_tree(node_t *node) {
 }
 
 void* tree_walker(void *node) {
-  const int target_iterations = 1 << 25;
-  const int tree_leaves = (1 << ((node_t*)node)->height);
-  const int reps = target_iterations / tree_leaves;
+  int const target_iterations = 1 << 25;
+  int const tree_leaves = (1 << ((node_t*)node)->height);
+  int const reps = target_iterations / tree_leaves;
   // Run "reps" times to ensure that we always do 32M iterations, regardless of the tree height.
   for (int i = 0; i < reps; i++) {
     walk_tree((node_t*)node);

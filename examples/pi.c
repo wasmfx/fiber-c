@@ -11,7 +11,9 @@
 // Parameters
 #define PRINT_RESULTS 0
 #define NUM_TASKS 1000
+// Number of samples taken between yields.
 static uint32_t const BATCH_SIZE = 100000;
+// Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
 static uint32_t const YIELDS = 50;
 
 // Array of results

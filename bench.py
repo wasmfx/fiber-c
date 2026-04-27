@@ -3,7 +3,7 @@
 Script that calls buildscript and runs fiber-c benchmarks.
 Usage:  `./bench.py --help`
         `./bench.py` # runs all benchmarks on all engines by default
-        `./bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir` 
+        `./bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir`
             # runs selected benchmarks and engines, saves results to `bench_results/results_dir`
 """
 import argparse
@@ -22,7 +22,7 @@ all_engines = config["ENGINES"]
 
 def call_buildscript():
     subprocess.check_call(["./build.py"])
-    
+
 def run_benchmarks(benchmarks, engines, filename, path):
     # call hyperfine to run wasmfx benchmarks
     subprocess.check_call(["hyperfine", "--warmup", "3", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_wasmfx.json", "--export-csv", f"bench_results/{path}/{filename}_wasmfx.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"])
@@ -46,11 +46,11 @@ def get_binary_sizes(benchmarks,filename, path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)", 
+        "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)",
         default=all_benchmarks
     )
     parser.add_argument(
-        "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)", 
+        "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)",
         default=all_engines
     )
     parser.add_argument("--output", "-o", help="Subdirectory to save results to. Default is `results`, e.g. bench_results/results",
@@ -63,7 +63,7 @@ def main():
 
     if not set(args.engines).issubset(set(all_engines)):
         raise ValueError(f"Error: invalid engine name(s). Valid options are: {', '.join(all_engines)}")
-    
+
     path = args.output
 
     # build and run everything

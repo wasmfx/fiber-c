@@ -1,4 +1,5 @@
 // Tree traversal; a recursive variation of `itersum.c`
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -90,6 +91,7 @@ int main(int argc, char** argv) {
   fiber_init();
 
   int height = atoi(argv[1]);
+  assert (height <= 25 && "height must be <= 25 to ensure the expected number of iterations is hit");
   node_t *tree = build_tree((int32_t)height, 0);
 
   int32_t result = run(tree);

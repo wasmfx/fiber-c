@@ -1,4 +1,8 @@
-// Asynchronous workload simulation
+// Benchmark that stresses the allocation part of the fiber library. It creates
+// a large number of fibers, each using a small amount of stack, and repeatedly
+// yields to them to do some work. It allocates 10K fibers, then runs a loop
+// where for a given fiber it resumes it twice to run it through and then frees
+// and reallocates it. It does that 10.01M times in total.
 
 #include <assert.h>
 #include <stdlib.h>

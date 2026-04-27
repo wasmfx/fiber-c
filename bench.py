@@ -54,7 +54,7 @@ def main():
         default=all_engines
     )
     parser.add_argument("--output", "-o", help="Subdirectory to save results to. Default is `results`, e.g. bench_results/results",
-        default=f"results"
+        default="results"
     )
     args = parser.parse_args()
 
@@ -80,8 +80,6 @@ def main():
     os.system(f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(args.benchmarks)} -o bench_results/{path}/charts")
     # make runtime chart
     os.system(f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts")
-    # clean up .wasm files and scripts
-    subprocess.check_call(["make", "clean"])
 
 if __name__ == "__main__":
     main()

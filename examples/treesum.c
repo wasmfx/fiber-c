@@ -47,12 +47,14 @@ void free_tree(node_t *node) {
   free(node);
 }
 
-void walk_tree(node_t *node) {
+int32_t walk_tree(node_t *node) {
   if (node->tag == LEAF) {
     fiber_yield((void*)(intptr_t)node->val);
+    return node->val;
   } else {
     walk_tree(node->left);
     walk_tree(node->right);
+    return node->val;
   }
 }
 

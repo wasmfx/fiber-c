@@ -52,6 +52,9 @@ out/%_switch_wasmfx.wasm: examples/%_switch.c inc/fiber_switch.h src/wasmfx/impo
 	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
+out/%.stripped.wasm: out/%.wasm
+	$(WASM_OPT) $(BINARYEN_FLAGS) --strip $< -o $@
+
 out/%.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 
@@ -60,6 +63,12 @@ src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 
 src/wasmfx/imports_switch.wat: src/wasmfx/imports_switch.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports_switch.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_switch.wat
+
+%.svg: %.dot
+	dot -Tsvg $< > $@
+
+%.callgraph.dot: %.wasm
+	$(WASM_OPT) --print-call-graph $< -o $@
 
 out:
 	mkdir -p out

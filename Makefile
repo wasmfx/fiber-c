@@ -52,7 +52,10 @@ out/%_switch_wasmfx.wasm: examples/%_switch.c inc/fiber_switch.h src/wasmfx/impo
 	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_switch_wasmfx_imports.wasm "fiber_switch_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
-out/%.stripped.wasm: out/%.wasm
+out/%_wasmfx.stripped.wasm: out/%_wasmfx.wasm
+	$(WASM_OPT) $(BINARYEN_FLAGS) --strip $< -o $@
+
+out/%_asyncify.stripped.wasm: out/%_asyncify.wasm
 	$(WASM_OPT) $(BINARYEN_FLAGS) --strip $< -o $@
 
 out/%.cwasm: out/%.wasm

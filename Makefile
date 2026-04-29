@@ -61,7 +61,6 @@ src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 src/wasmfx/imports_switch.wat: src/wasmfx/imports_switch.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports_switch.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_switch.wat
 
-.PHONY: out
 out:
 	mkdir -p out
 

@@ -17,7 +17,7 @@ SWITCH_BENCHMARKS= hello itersum treesum
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
-%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm
+%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
 	@echo Made $@ #from $^
 
 $(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm

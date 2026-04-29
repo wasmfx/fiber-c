@@ -32,8 +32,8 @@ def run_benchmarks(benchmarks, engines, filename, path):
 def get_binary_sizes(benchmarks,filename, path):
     data=[]
     for benchmark in benchmarks:
-        wasmfx_size = os.path.getsize(f"out/{benchmark}_wasmfx.wasm")
-        asyncify_size = os.path.getsize(f"out/{benchmark}_asyncify.wasm")
+        wasmfx_size = os.path.getsize(f"out/{benchmark}_wasmfx.stripped.wasm")
+        asyncify_size = os.path.getsize(f"out/{benchmark}_asyncify.stripped.wasm")
         entry = {
             "benchmark": benchmark,
             "wasmfx": wasmfx_size,
@@ -73,11 +73,12 @@ def main():
     os.makedirs(f"bench_results/{path}/charts/absolute_benchmarks", exist_ok=True)
     os.makedirs(f"bench_results/{path}/charts/absolute_engines", exist_ok=True)
     os.makedirs(f"bench_results/{path}/charts/relative", exist_ok=True)
-    # get all the data we want
+    # get binary size data
     get_binary_sizes(args.benchmarks,"binary_sizes", path)
-    run_benchmarks(args.benchmarks, args.engines, "results", path)
     # make binary size chart
     os.system(f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(args.benchmarks)} -o bench_results/{path}/charts")
+    # run benchmarks to obtain runtime data
+    run_benchmarks(args.benchmarks, args.engines, "results", path)
     # make runtime chart
     os.system(f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts")
 

@@ -52,19 +52,21 @@ int32_t walk_tree(node_t *node) {
     fiber_yield((void*)(intptr_t)node->val);
     return node->val;
   } else {
-    walk_tree(node->left);
-    walk_tree(node->right);
-    return node->val;
+    int sum = walk_tree(node->left);
+    sum += walk_tree(node->right);
+    return sum;
   }
 }
 
-void* tree_walker(void *node) {
+void* tree_walker(void *arg) {
+  node_t *node = (node_t*)arg;
   int const target_iterations = 1 << 25;
-  int const tree_leaves = (1 << ((node_t*)node)->height);
+  int const tree_leaves = (1 << node->height);
   int const reps = target_iterations / tree_leaves;
   // Run "reps" times to ensure that we always do 32M iterations, regardless of the tree height.
   for (int i = 0; i < reps; i++) {
-    walk_tree((node_t*)node);
+    int result = walk_tree(node);
+    assert (result == node->height * tree_leaves && "answer verification failed.");;
   }
   return NULL;
 }

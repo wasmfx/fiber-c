@@ -25,7 +25,7 @@
 
 static const uint32_t total_conn = 10 * 1000000;
 #define ACTIVE_CONN 10000U
-static const uint32_t stack_kb = 64;
+static const uint32_t stack_kb = 32;
 
 noinline void* as_stack_address(void* p) {
   return p;
@@ -104,7 +104,7 @@ noinline uint32_t async_wl(void) {
 int main(void) {
   fiber_init();
   uint32_t const result = async_wl();
-  assert(result >= 10000000 && "result validation failed");
+  assert(result == 10000000 && "result validation failed");
   fiber_finalize();
   return 0;
 }

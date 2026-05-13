@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="module">
+      export class Wasi {
+        fd_close() {}
+        fd_fdstat_get() {}
+        fd_seek() {}
+        fd_seek() {}
+        fd_write() {}
+        proc_exit() {}
+        args_get() {}
+        args_sizes_get() {}
+      };
+
+      const wasi = new Wasi({
+      });
+      async function init() {
+        const { instance } = await WebAssembly.instantiateStreaming(
+          fetch("../out/ray_asyncify.wasm"), { "wasi_snapshot_preview1": wasi }
+        );
+
+        const width = 600;
+        const height = 600;
+
+        const canvas = document.getElementById("demo-canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        console.log(instance.exports);
+        const buffer_address = instance.exports.getBuffer().value;
+        const image = new ImageData(
+            new Uint8ClampedArray(
+                instance.exports.memory.buffer,
+                buffer_address,
+                4 * width * height,
+            ),
+            width,
+        );
+
+        const ctx = canvas.getContext("2d");
+
+        instance.exports.render();
+
+        ctx.putImageData(image, 0, 0);
+      }
+
+      init();
+    </script>
+  </head>
+  <body>
+    <canvas id="demo-canvas"></canvas>
+  </body>
+</html>

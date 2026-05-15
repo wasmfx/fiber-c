@@ -25,11 +25,18 @@
   ;; in linear memory
   (global $sstack_current_ptrs_addr (mut i32) (i32.const 0))
 
-  ;; Keeps track of the index, into the continuation table, of the "switched from" continuation
-  (global $switched_from_global (mut i32) (i32.const 0))
 
+  ;; These two globals keep track of who's who across context-switches.
+  ;; Every time we switch, we need to make sure the prior fiber's index
+  ;; is in $switch_from_fiber_index and the new one is in $active_fiber_index.
+  ;; Also after any switch the target fiber needs to start by storing the
+  ;; generated continuation reference at the index specified by
+  ;; $switched_from_fiber_index in the $conts table.
+  ;;
+  ;; Keeps track of the index, into the continuation table, of the "switched from" continuation
+  (global $switched_from_fiber_index (mut i32) (i32.const 0))
   ;; Keeps track of the currently active continuation
-  (global $active_continuation (mut i32) (i32.const 0))
+  (global $active_fiber_index (mut i32) (i32.const 0))
 
   ;; Keep the initial size of this table in sync with INITIAL_TABLE_CAPACITY in
   ;; .c file.
@@ -55,15 +62,23 @@
   ;; `$indirect_function_table`, and the latter contains entries of type
   ;; `funcref`. There is no way to downcast from `funcref` to a concrete function
   ;; reference type. Thus we cannot call `cont.new` on entries from
-  ;; `$indirect_function_table` directly, but must use this trampoline instead.
-  (func $wasmfx_entry_trampoline (type $ft3)
-    (table.set $conts (global.get $active_continuation) (local.get 2))
+  ;; `$indirect_function_table` directly, but must use this wrapper instead.
+  ;;
+  ;; This function is used to populate the continuation type that is stored in
+  ;; the array of fibers' continuations, so it is compatible with that and must
+  ;; observe the same protocol, namely updating the $conts table.
+  (func $fiber_entry_frame (type $ft3)
+    ;; The arguments are function_index (to call), arg to that call, and a
+    ;; continuation that was captured as the that of the prior running fiber.
+    ;; We must maintain the $conts table by stuffing that prior continuation somewhere.
+    (table.set $conts (global.get $active_fiber_index) (local.get 2))
     (call_indirect $indirect_function_table (type $ft2-generic)
       (local.get 1)
-      (global.get $active_continuation)
+      (global.get $active_fiber_index)
       (local.get 0)
     )
   )
+
   (func $initial_entry_trampoline
      (param $func_index i32)
      (param $argc i32)
@@ -75,8 +90,7 @@
        (local.get $argv)
        (local.get $func_index))
   )
-  (elem declare func $wasmfx_entry_trampoline $initial_entry_trampoline)
-
+  (elem declare func $fiber_entry_frame $initial_entry_trampoline)
 
   (func $indexed_cont_new (export "wasmfx_indexed_cont_new")
     (param $func_index i32)
@@ -84,7 +98,7 @@
     (local $cont (ref $ct2))
 
     (local.get $func_index)
-    (cont.new $ct3 (ref.func $wasmfx_entry_trampoline))
+    (cont.new $ct3 (ref.func $fiber_entry_frame))
     (cont.bind $ct3 $ct2)
     (local.set $cont)
 
@@ -120,16 +134,16 @@
         (drop) ;; contref
         ;; Prepare next fiber
         (local.set $arg)
-        (global.set $active_continuation)
+        (global.set $active_fiber_index)
 
         ;; Load the next shadow stack
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
         ;; The following 5 instructions are equivalent to the following C code
         ;; (inlined here until we have wasm-opt):
-        ;; __shadow_stack_ptr = sstack_current_ptrs[active_continuation]
+        ;; __shadow_stack_ptr = sstack_current_ptrs[active_fiber_index]
 
         (i32.load (global.get $sstack_current_ptrs_addr))
-        (i32.mul (i32.const 4) (global.get $active_continuation))
+        (i32.mul (i32.const 4) (global.get $active_fiber_index))
         (i32.add)
         (i32.load)
         (global.set $sstack_ptr)
@@ -137,8 +151,8 @@
         (block $switch-return (result i32 i32 (ref $cancel-ct))
           (resume $ct2 (on $yield switch) (on $switch-return $switch-return)
             (local.get $arg)
-            (ref.null $ct2) ;; "dummy" continuation
-            (table.get $conts (global.get $active_continuation)) ;; fetches the actual continuation object
+            (ref.null $ct2) ;; In this context, the previous thread has exited (has it!?) so passing this null continuation represents that fact.
+            (table.get $conts (global.get $active_fiber_index)) ;; fetches the actual continuation object
           ) ;; we returned, stack is: [i32]
           (br $done)
         ) ;; $switch-return: [i32 i32 contref]
@@ -153,19 +167,28 @@
   )
 
   (func $switch (export "wasmfx_switch")
+    ;; The ID of the target to switch to.
     (param $target_index i32)
+    ;; An arbitrary argument that gets passed to the target fibre.
     (param $arg i32)
-    (param $switched_from i32)
+    ;; An output arg pointer that we'll use to pass the identity of the
+    ;; switched-from fiber back to the C level.
+    (param $switched_from_output i32)
     (result i32)
 
-    (local $self i32)
+    ;; $self_fiber_index: The identity of the fiber we exist in throughout this
+    ;; lexical function. It switches roles from being the "current" or
+    ;; "come-from" fiber, to being the "target" or "next" fiber, at the moment
+    ;; of the switch instruction.
+    (local $self_fiber_index i32)
+    ;; $k doesn't have a meaning, just a temporary for various continuation objects.
     (local $k (ref null $ct2))
     (local $old_shadow_sp i32)
 
-    ;; Remember self
-    (local.set $self (global.get $active_continuation))
+    ;; Remember the ID of the active fiber at this point as self_fiber_index
+    (local.set $self_fiber_index (global.get $active_fiber_index))
 
-    ;; Get the continuation object, and null-out its entry.
+    ;; Get the target continuation object, and null-out its entry.
     (local.set $k (table.get $conts (local.get $target_index)))
     (table.set $conts (local.get $target_index) (ref.null $ct2))
 
@@ -173,9 +196,9 @@
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
     ;; The following 5 instructions are equivalent to the following C code
     ;; (inlined here until we have wasm-opt):
-    ;; sstack_current_ptrs[self] = __shadow_stack_ptr
+    ;; sstack_current_ptrs[self_fiber_index] = __shadow_stack_ptr
     (i32.load (global.get $sstack_current_ptrs_addr))
-    (i32.mul (i32.const 4) (local.get $self))
+    (i32.mul (i32.const 4) (local.get $self_fiber_index))
     (i32.add)
     (global.get $sstack_ptr)
     (i32.store)
@@ -190,20 +213,30 @@
     (global.set $sstack_ptr)
 #endif
 
-    ;; Switch to the continuation object
-    (global.set $active_continuation (local.get $target_index))
-    (global.set $switched_from_global (local.get $self))
+    ;; Switch to the target fiber by invoking its continuation object.
+    ;; We also maintain the two globals
+    (global.set $active_fiber_index (local.get $target_index))
+    (global.set $switched_from_fiber_index (local.get $self_fiber_index))
     (switch $ct2 $yield (local.get $arg) (local.get $k))
-
-    (local.set $k)
     ;; We came back from another continuation, stack is: [i32 contref]
-    (table.set $conts (global.get $switched_from_global) (local.get $k))
-    (i32.store (local.get $switched_from) (global.get $switched_from_global))
+    ;; The continuation is that of the previous fiber.
+    ;;
+    ;; global values $switched_from_fiber_index and $active_fiber_index
+    ;; will have been updated by the other continuations. It will have set
+    ;; the "active" index to the new one that we'll continue as, and the
+    ;; switched-from index to its own.
+
+    ;; Grab the continuation that was created by the other fiber that switched
+    ;; to us, and put it in the table at the $switched_from_fiber_index.
+    (local.set $k)
+    (table.set $conts (global.get $switched_from_fiber_index) (local.get $k))
+    ;; Return the identity of the fiber that switched to us, to the C level.
+    (i32.store (local.get $switched_from_output) (global.get $switched_from_fiber_index))
 
     ;; Restore shadow stack
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
     (i32.load (global.get $sstack_current_ptrs_addr))
-    (i32.mul (i32.const 4) (local.get $self))
+    (i32.mul (i32.const 4) (local.get $self_fiber_index))
     (i32.add)
     (i32.load)
     (global.set $sstack_ptr)

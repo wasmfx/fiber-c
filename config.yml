@@ -30,10 +30,10 @@ BENCHMARKS_FIBER_C : [
 
 # Arguments for benchmarks that require arguments
 BENCHMARK_ARGS : {
-    "itersum": 1000000,
+    "itersum": 100000000,
     "treesum": 25,
     "sieve": 2000,
-    "itersum_switch": 1000000,
+    "itersum_switch": 100000000,
     "treesum_switch": 25,
 }
 

@@ -1,5 +1,4 @@
 // An implementation of the fiber_switch.h interface using wasmfx continuations
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -145,8 +144,6 @@ void fiber_free(fiber_t fiber) {
 }
 
 void* fiber_switch(fiber_t target, void *arg, fiber_t *switched_from) {
-  assert(target != NULL && "cannot switch to null target");
-  assert(switched_from != NULL && "the container must be non-null");
   cont_table_index_t switched_from_index = 0;
   void *result = wasmfx_switch((cont_table_index_t)target, arg, &switched_from_index);
   *switched_from = (fiber_t)switched_from_index;
@@ -154,7 +151,6 @@ void* fiber_switch(fiber_t target, void *arg, fiber_t *switched_from) {
 }
 
 void fiber_switch_return(fiber_t target, void *arg) {
-  assert(target != NULL && "cannot switch-return to null target");
   wasmfx_switch_return((cont_table_index_t)target, arg);
 }
 

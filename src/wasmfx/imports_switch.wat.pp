@@ -71,10 +71,10 @@
     ;; The arguments are function_index (to call), arg to that call, and a
     ;; continuation that was captured as the that of the prior running fiber.
     ;; We must maintain the $conts table by stuffing that prior continuation somewhere.
-    (table.set $conts (global.get $active_fiber_index) (local.get 2))
+    (table.set $conts (global.get $switched_from_fiber_index) (local.get 2))
     (call_indirect $indirect_function_table (type $ft2-generic)
       (local.get 1)
-      (global.get $active_fiber_index)
+      (global.get $switched_from_fiber_index)
       (local.get 0)
     )
   )
@@ -248,6 +248,12 @@
    (func $switch-return (export "wasmfx_switch_return")
     (param $target_index i32)
     (param $arg i32)
+
+    ;; In the following line, active_fiber_index is the index of the fiber we're currently in. 
+    ;; We need to update switched_from_fiber_index here because otherwise the handler for 
+    ;; return-switch in $wasmfx_switch_trampoline will nullify the continuation table entry
+    ;; for the previously active fiber, rather than the current one.
+    (global.set $switched_from_fiber_index (global.get $active_fiber_index))
 
     (suspend $switch-return (local.get $target_index) (local.get $arg))
   )

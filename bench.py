@@ -89,9 +89,11 @@ def main():
     # compile the wasm binaries for each benchmark (the buildscript does this for both switch and non-switch benchmarks in the same call)
     for benchmark in args.benchmarks:
         subprocess.check_call(["make", benchmark])
-    # now update benchmarks to include switch versions of the selected benchmarks, e.g. if user selects "itersum", also add "itersum_switch"
-    args.benchmarks = list(zip([b + "_switch" for b in args.benchmarks], args.benchmarks))
-    args.benchmarks = list(sum(args.benchmarks, ())) # flatten list of tuples
+    # if running switch experiments, update benchmarks to include switch versions of the selected benchmarks
+    #    e.g. if user selects "itersum", also add "itersum_switch"
+    if args.switch:
+        args.benchmarks = list(zip([b + "_switch" for b in args.benchmarks], args.benchmarks))
+        args.benchmarks = list(sum(args.benchmarks, ())) # flatten list of tuples
     # get binary size data
     get_binary_sizes(args.benchmarks,"binary_sizes", path)
     # make binary size chart

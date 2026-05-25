@@ -2,9 +2,9 @@
 """
 Buildscript that generates scripts to run them on the three wasm engines of interest (d8, wasmtime, and wizard). 
 The generated scripts are in /run-scripts and can be executed with `./run-scripts/benchmark_engine_mode.sh`,
-e.g. `./run-scripts/sieve1_d8_wasmfx.sh`.
-Usage:  `./build.py --help`
-        `./build.py --engines d8 wasmtime` to only generate scripts for d8 and wasmtime.
+e.g. `./run-scripts/sieve1_d8_wasmfx.sh`. Configurations are in config.yml.
+
+Usage:  `./build.py`
 """
 
 import argparse
@@ -15,10 +15,6 @@ from pathlib import Path
 
 # Import config
 config = yaml.safe_load(open("config.yml"))
-
-# Given a benchmark name, build .wasm files for both asyncify and wasmfx modes.
-def build_benchmarks():
-    subprocess.run(["make", "all"])
 
 # ---- Script generation ----
 
@@ -77,16 +73,13 @@ def generate_scripts(benchmark: str, engines: list[str]):
             make_script(Path("run-scripts/" + script_name), content)
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--engines", nargs="*", choices=list(config["ENGINES"]), help="Build and generate scripts for specified engine(s)",
-        default=config["ENGINES"]
-    )
-    args = parser.parse_args()
-    build_benchmarks()
     for benchmark in config["BENCHMARKS_FIBER_C"]:
-        generate_scripts(benchmark,args.engines)
+        generate_scripts(benchmark, config["ENGINES"])
         print("Generated scripts for benchmark:", benchmark)
+    for benchmark in config["BENCHMARKS_FIBER_C_SWITCH"]:
+        benchmark_name = benchmark + "_switch"
+        generate_scripts(benchmark_name, config["ENGINES_SWITCH"])
+        print("Generated scripts for benchmark:", benchmark_name)
 
 if __name__ == "__main__":
     main()

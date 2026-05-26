@@ -78,7 +78,7 @@ def main():
         print("Generated scripts for benchmark:", benchmark)
     for benchmark in config["BENCHMARKS_FIBER_C_SWITCH"]:
         benchmark_name = benchmark + "_switch"
-        generate_scripts(benchmark_name, config["ENGINES_SWITCH"])
+        generate_scripts(benchmark_name, config["ENGINES"])
         print("Generated scripts for benchmark:", benchmark_name)
 
 if __name__ == "__main__":

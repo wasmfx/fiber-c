@@ -1,9 +1,6 @@
 # List of valid engines
 ENGINES : [ "d8", "wasmtime", "wizard" ]
 
-# List of valid engines for switch experiments
-ENGINES_SWITCH : [ "d8", "wizard" ] # switch is still broken on wasmtime
-
 # Paths to engines and engine-specific options
 # Wasmtime
 WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"

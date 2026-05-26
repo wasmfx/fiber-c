@@ -21,7 +21,11 @@ all_benchmarks = config["BENCHMARKS_FIBER_C"]
 switch_benchmarks = config["BENCHMARKS_FIBER_C_SWITCH"]
 
 all_engines = config["ENGINES"]
-switch_engines = config["ENGINES_SWITCH"]
+
+def disabled(engine, benchmark, style):
+    if engine == "wasmtime" and style == "switch":
+        return True
+    return False
 
 def generate_scripts():
     subprocess.check_call(["./build.py"])
@@ -69,15 +73,17 @@ def main():
     if args.switch:
         if not set(args.benchmarks).issubset(set(switch_benchmarks)):
             raise ValueError(f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}")
-        if not set(args.engines).issubset(set(switch_engines)):
-            raise ValueError(f"Error: invalid switch engine name(s). Valid options are: {', '.join(switch_engines)}")
+        # Can't run switch experiments on wasmtime right now so we are banning that option
+        if not set(args.engines).issubset(set(["d8", "wizard"])):
+            raise ValueError(f"Error: invalid engine name(s). Valid options are: d8, wizard (switch experiments are currently broken on wasmtime)")
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):
             raise ValueError(f"Error: invalid benchmark name(s). Valid options are: {', '.join(all_benchmarks)}")
-        if not set(args.engines).issubset(set(all_engines)):
-            raise ValueError(f"Error: invalid engine name(s). Valid options are: {', '.join(all_engines)}")
+    if not set(args.engines).issubset(set(all_engines)):
+        raise ValueError(f"Error: invalid engine name(s). Valid options are: {', '.join(all_engines)}")
 
     path = args.output
+    benchmarks_to_run = args.benchmarks
 
     # make nice output directories
     os.makedirs(f"bench_results/{path}", exist_ok=True)
@@ -87,27 +93,27 @@ def main():
     # generate the benchmarking scripts
     generate_scripts()
     # compile the wasm binaries for each benchmark (the buildscript does this for both switch and non-switch benchmarks in the same call)
-    for benchmark in args.benchmarks:
+    for benchmark in benchmarks_to_run:
         subprocess.check_call(["make", benchmark])
     # if running switch experiments, update benchmarks to include switch versions of the selected benchmarks
     #    e.g. if user selects "itersum", also add "itersum_switch"
     if args.switch:
-        args.benchmarks = list(zip([b + "_switch" for b in args.benchmarks], args.benchmarks))
-        args.benchmarks = list(sum(args.benchmarks, ())) # flatten list of tuples
+        benchmarks_to_run = list(zip([b + "_switch" for b in benchmarks_to_run], benchmarks_to_run))
+        benchmarks_to_run = list(sum(benchmarks_to_run, ())) # flatten list of tuples
     # get binary size data
-    get_binary_sizes(args.benchmarks,"binary_sizes", path)
+    get_binary_sizes(benchmarks_to_run,"binary_sizes", path)
     # make binary size chart
-    os.system(f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(args.benchmarks)} -o bench_results/{path}/charts")
+    os.system(f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(benchmarks_to_run)} -o bench_results/{path}/charts")
     # run benchmarks to obtain runtime data
-    run_benchmarks(args.benchmarks, args.engines, "results", path)
+    run_benchmarks(benchmarks_to_run, args.engines, "results", path)
     # make runtime charts
-    os.system(f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts")
+    os.system(f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts")
     # Make extra charts for switch benchmarks
     if args.switch:
         # Put the extra charts in this directory
         os.makedirs(f"bench_results/{path}/charts/switch", exist_ok=True)
         # Run the switch-specific chart script on the wasmfx result file only
-        os.system(f"python3 plot_benchmarks_switch.py bench_results/{path}/results_wasmfx.json --benchmarks {' '.join(args.benchmarks)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts/switch")
+        os.system(f"python3 plot_benchmarks_switch.py bench_results/{path}/results_wasmfx.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts/switch")
 
 if __name__ == "__main__":
     main()

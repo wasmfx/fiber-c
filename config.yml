@@ -20,13 +20,19 @@ BENCHMARKS_FIBER_C : [
     "sieve",
     "state",
     "treesum",
-    #"treesumlinear",
     "c10m",
     "pi",
     "skynet",
-    "itersum_switch",
-    "treesum_switch",
+    "scheduler",
   ]
+
+# List of switch benchmarks
+BENCHMARKS_FIBER_C_SWITCH : [
+    "itersum",
+    "treesum",
+    "pi",
+    "scheduler",
+]
 
 # Arguments for benchmarks that require arguments
 BENCHMARK_ARGS : {

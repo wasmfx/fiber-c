@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include <fiber.h>
 
@@ -16,6 +17,10 @@ static uint32_t const BATCH_SIZE = 100000;
 // Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
 static uint32_t const YIELDS = 50;
 
+// Global state for scheduler
+bool keep_going = true;
+uint32_t next = 0;
+
 // Array of results
 static double results[NUM_TASKS];
 
@@ -25,6 +30,35 @@ static fiber_t workers[NUM_TASKS];
 // Array of statuses
 static bool worker_status[NUM_TASKS];
 
+void update_state() { 
+  // Update global variable `next` to point to the next available worker (if any).
+  uint32_t i = 0;
+  for (next = (next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, next = (next+1) % NUM_TASKS) {
+    if (!worker_status[next]) {
+      break;
+    }
+  }
+   // Update keep_going variable too
+  keep_going = i < NUM_TASKS;
+}
+
+void scheduler() {
+  fiber_result_t status;
+  do {
+    (void)fiber_resume(workers[next], &results[next], &status);
+    switch (status) {
+    case FIBER_OK:
+      worker_status[next] = true;
+      break;
+    case FIBER_YIELD:
+      break;
+    case FIBER_ERROR:
+      abort(); // A fiber should never enter the error state.
+      break;
+    }
+    update_state();
+  } while (keep_going);
+}
 
 void* monte_carlo(void *arg) {
   double *pi = (double*)(intptr_t)arg;
@@ -69,33 +103,8 @@ int main(void) {
     worker_status[i] = false;
   }
 
-  // Scheduler
-  bool keep_going = true;
-  uint32_t next = 0;
-  fiber_result_t status;
-  do {
-    (void)fiber_resume(workers[next], &results[next], &status);
-    switch (status) {
-    case FIBER_OK:
-      worker_status[next] = true;
-      break;
-    case FIBER_YIELD:
-      break;
-    case FIBER_ERROR:
-      abort(); // A fiber should never enter the error state.
-      break;
-    }
-
-    // Find the next available worker.
-    uint32_t i = 0;
-    for (next = (next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, next = (next+1) % NUM_TASKS) {
-      if (!worker_status[next]) {
-        break;
-      }
-    }
-    keep_going = i < NUM_TASKS;
-  } while (keep_going);
-
+  // Start the scheduler loop which will run the workers
+  scheduler();
 
   #if PRINT_RESULTS
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
@@ -103,8 +112,9 @@ int main(void) {
   }
   #endif
 
-  // Clean up
+  // Validate results and clean up
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
+    assert(results[i] > 0.0 && "Result should be positive");
     fiber_free(workers[i]);
   }
 

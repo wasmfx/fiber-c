@@ -5,13 +5,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include <fiber_switch.h>
 
 // Parameters
 #define PRINT_RESULTS 0
 #define NUM_TASKS 1000
+// Number of samples taken between yields.
 static uint32_t const BATCH_SIZE = 100000;
+// Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
 static uint32_t const YIELDS = 50;
 
 // Global state for scheduler
@@ -114,16 +117,17 @@ int main(int argc, char **argv) {
 
   fiber_main(prog, argc, argv);
   
-  // Clean up
-  for (uint32_t i = 0; i < NUM_TASKS; ++i) {
-    fiber_free(workers[i]);
-  }
-  
   #if PRINT_RESULTS
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
     printf("%f\n", results[i]);
   }
   #endif
+
+  // Validate results and clean up
+  for (uint32_t i = 0; i < NUM_TASKS; ++i) {
+    assert(results[i] > 0.0 && "Result should be positive");
+    fiber_free(workers[i]);
+  }
 
   return 0;
 }

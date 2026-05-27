@@ -1,3 +1,8 @@
+// Benchmark that runs 10 fibers at the same time, each fiber increments 
+// a number. Intended as an itersum-analogue that exhibits what we get 
+// from using the switch instruction over resume/suspend in a green 
+// threads-like setting.
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -42,7 +47,7 @@ void scheduler(bool worker_done, fiber_t caller) {
   if (worker_done) {
     // Mark the current worker as done.
     worker_status[next] = true;
-    // Determine whether we should keep going.
+    // Find the next available worker and determine if we should keep going.
     update_state();
     if (!keep_going) {
       // If no more available workers, switch-return to the outer loop.     
@@ -98,13 +103,15 @@ int main(int argc, char **argv) {
   }
   #endif
 
-  // Clean up
+  // Validate results and clean up
   for (uint32_t i = 0; i < NUM_WORKERS; ++i) {
+    assert(results[i] == SWITCHES);
     fiber_free(workers[i]);
   }
-
+  
   return 0;
 }
 
 #undef PRINT_RESULTS
 #undef NUM_WORKERS
+#undef SWITCHES

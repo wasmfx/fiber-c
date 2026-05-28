@@ -25,6 +25,7 @@ static uint32_t cont_table_capacity = initial_table_capacity;
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity - 1`
 // Invariant after wasmfx_grow_cont_table is called:
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity`
+static_assert(WASMFX_CONT_TABLE_INITIAL_CAPACITY > 0);
 static uint32_t cont_table_unused_size = initial_table_capacity - 1;
 
 // This is a stack of indices into `$conts` that we have previously used, but

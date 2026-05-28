@@ -66,11 +66,12 @@ void* increment(void *arg, fiber_t caller) {
   // Save reference to main loop if this is the first entry to the first worker
   if (next == 0) { main_fiber = caller; }
   // Pointer to final result
-  int32_t *result = (int32_t*)(intptr_t)arg;
+  assert(arg && "null argument");
+  int32_t result = *((int32_t*)(intptr_t)arg);
 
   for (uint32_t i = 0; i < SWITCHES; ++i) {
     // Increment result
-    (*result)++;
+    ++result;
     // Scheduler will call switch
     scheduler(false, caller);
   }

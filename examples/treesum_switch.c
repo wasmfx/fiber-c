@@ -18,6 +18,7 @@ typedef struct node {
     int32_t val;
     // Fork
     struct {
+      int height;
       struct node *left;
       struct node *right;
     };
@@ -31,6 +32,7 @@ node_t* build_tree(int32_t depth, int32_t val) {
     node->val = val;
   } else {
     node->tag = FORK;
+    node->height = depth;
     node_t *subtree = build_tree(depth - 1, val + 1);
     node->left = subtree;
     node->right = subtree;
@@ -51,20 +53,32 @@ void free_tree(node_t *node) {
   free(node);
 }
 
-void walk_tree(node_t const *const node, fiber_t switch_back) {
+int32_t walk_tree(node_t const *const node, fiber_t switch_back) {
   assert(switch_back != NULL);
   if (node->tag == LEAF) {
     (void)fiber_switch(switch_back, (void*)(intptr_t)node->val, &switch_back);
+    return node->val;
   } else {
-    walk_tree(node->left, switch_back);
-    walk_tree(node->right, switch_back);
+    int sum = walk_tree(node->left, switch_back);
+    sum += walk_tree(node->right, switch_back);
+    return sum;
   }
 }
 
-void* tree_walker(void const *const node, fiber_t caller) {
+void* tree_walker(void const *const arg, fiber_t caller) {
   assert(caller != NULL);
-  walk_tree((node_t*)node, caller);
-  walk_done = true;
+  node_t *node = (node_t*)arg;
+  int const target_iterations = 1 << 25;
+  int const tree_leaves = (1 << node->height);
+  int const reps = target_iterations / tree_leaves;
+
+  // Run "reps" times to ensure that we always do 32M iterations, regardless of the tree height.
+  for (int i = 0; i < reps; i++) {
+    walk_done = false;
+    int result = walk_tree((node_t*)node, caller);
+    assert(result == node->height * tree_leaves && "answer verification failed.");
+    walk_done = true;
+  }
 
   fiber_switch_return(caller, NULL);
   return NULL;

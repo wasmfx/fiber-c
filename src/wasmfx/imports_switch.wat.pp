@@ -31,12 +31,13 @@
   ;; is in $switch_from_fiber_index and the new one is in $active_fiber_index.
   ;; Also after any switch the target fiber needs to start by storing the
   ;; generated continuation reference at the index specified by
-  ;; $switched_from_fiber_index in the $conts table.
+  ;; $switched_from_fiber_index in the $conts table. Both are initialized
+  ;; to 1 since we reserve index 0 in the continuation table as a null value.
   ;;
   ;; Keeps track of the index, into the continuation table, of the "switched from" continuation
-  (global $switched_from_fiber_index (mut i32) (i32.const 0))
+  (global $switched_from_fiber_index (mut i32) (i32.const 1))
   ;; Keeps track of the currently active continuation
-  (global $active_fiber_index (mut i32) (i32.const 0))
+  (global $active_fiber_index (mut i32) (i32.const 1))
 
   ;; Keep the initial size of this table in sync with INITIAL_TABLE_CAPACITY in
   ;; .c file.
@@ -116,6 +117,9 @@
 
     ;; Save shadow stack prior to invoking the initial trampoline
     (local.set $old_shadow_sp (global.get $sstack_ptr))
+
+    ;; Set both the switched-from and active fiber indices to 1 since
+    ;; we are
 
     ;; The initial continuation invocation is special as we pass argc
     ;; and argv to it.

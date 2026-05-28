@@ -42,7 +42,7 @@ engines = args.engines
 
 # Parse JSON files to extract benchmark results, we are only interested in the mean times
 data = []
-inputs = []
+data_stddev = []
 
 # Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a backend (wasmfx vs asyncify), 
 # and the values are the mean runtimes from the hyperfine output json file
@@ -50,9 +50,11 @@ for i, filename in enumerate(args.files):
     with open(filename) as f:
         results = json.load(f)["results"]
     data.append([round(b["mean"], 6) for b in results])
-    inputs.append(filename.stem)
+    data_stddev.append([round(b["stddev"], 6) for b in results])
 
 data = np.transpose(data)
+data_stddev = np.transpose(data_stddev)
+print(data_stddev)
 
 # The width of the bars in the chart
 width = 1
@@ -65,6 +67,12 @@ bar_colors = ['tab:blue', 'tab:orange', 'tab:cyan', 'tab:red', 'tab:purple', 'ta
 
 # Get the chart data: divide first column by second column to obtain wasmfx / asyncify ratio
 ratio = np.divide(data[:, 1], data[:, 0])
+
+# Get the standard deviation for the ratio.
+# First we want the standard deviations as percentages of the mean:
+data_stddev_percent = np.divide(data_stddev, data)
+# Then we apply the formula for error propagation for division
+ratio_stddev = ratio * np.sqrt(np.square(data_stddev_percent[:, 0]) + np.square(data_stddev_percent[:, 1]))
 
 # Compute x values for bar locations, with gaps between groups of bars for each engine
 #   eg. x = [0,1,2,4,5,6,8,9,10] for 3 benchmarks across 3 engines, 
@@ -83,6 +91,9 @@ ax.set_xticks(bar_loc, axis_labels)
 # Keeps every nth label, make the rest invisible
 n = len(benches)
 [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != math.ceil(n/2) - 1]
+
+# Error bars
+plt.errorbar(bar_loc, ratio, yerr=ratio_stddev, fmt='.', color='black', label='Standard Deviation')
 
 # Readability features
 ax.grid(visible=True, axis="y")
@@ -115,6 +126,7 @@ else:
 for i, engine in enumerate(engines):
     # Get array of data from this engine
     engine_data = data[(i)*(len(benches)):(i+1)*(len(benches))].flatten()
+    engine_data_stddev = data_stddev[(i)*(len(benches)):(i+1)*(len(benches))].flatten()
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # Logic: for each benchmark we allocate three bars, where the third one is a gap,
@@ -132,6 +144,9 @@ for i, engine in enumerate(engines):
 
     # Keeps every other label, make the rest invisible
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+
+    # Error bars
+    plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
 
     # Readability features
     ax.grid(visible=True, axis="y")
@@ -155,10 +170,13 @@ for i, benchmark in enumerate(benches):
     # Get array of data from this benchmark
     # There should always be 2 * len(engines) entries for each benchmark
     bench_data = []
+    bench_data_stddev = []
     for j in range(len(engines)):
         bench_data.append(data[i + j*len(benches)][0]) # wasmfx time for this benchmark and engine
         bench_data.append(data[i + j*len(benches)][1]) # asyncify time for this benchmark and engine
-    
+        bench_data_stddev.append(data_stddev[i + j*len(benches)][0]) # wasmfx std dev for this benchmark and engine
+        bench_data_stddev.append(data_stddev[i + j*len(benches)][1]) # asyncify std dev for this benchmark and engine
+
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # This is the same as the previous chart except we have len(engines) groups of bars
     bar_loc = [x for x in np.arange(len(engines) * 3) if ((x+1) % 3) != 0]
@@ -175,6 +193,9 @@ for i, benchmark in enumerate(benches):
     # Keeps every other label, make the rest invisible
     n = len(engines)
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+
+    # Error bars
+    plt.errorbar(bar_loc, bench_data, yerr=bench_data_stddev, fmt='.', color='black', label='Standard Deviation')
 
     # Readability features
     ax.grid(visible=True, axis="y")

@@ -19,10 +19,11 @@ static const uint32_t initial_table_capacity = WASMFX_CONT_TABLE_INITIAL_CAPACIT
 // The current capacity of the `$conts` table.
 static uint32_t cont_table_capacity = initial_table_capacity;
 // Number of entries at the end of `$conts` table that we haven't used so
-// far.
+// far. Initialised to initial_table_capacity - 1 because we reserve index 0 
+// of the table for null checks.
 // Invariant:
-// `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity`
-static uint32_t cont_table_unused_size = initial_table_capacity;
+// `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity - 1`
+static uint32_t cont_table_unused_size = initial_table_capacity - 1;
 
 // This is a stack of indices into `$conts` that we have previously used, but
 // subsequently freed. Allocated as part of `fiber_init`. Invariant: Once

@@ -66,7 +66,7 @@ void* tree_walker(void *arg) {
   // Run "reps" times to ensure that we always do 32M iterations, regardless of the tree height.
   for (int i = 0; i < reps; i++) {
     int result = walk_tree(node);
-    assert (result == node->height * tree_leaves && "answer verification failed.");;
+    assert (result == node->height * tree_leaves && "answer verification failed.");
   }
   return NULL;
 }

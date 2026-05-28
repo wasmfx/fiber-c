@@ -118,9 +118,6 @@
     ;; Save shadow stack prior to invoking the initial trampoline
     (local.set $old_shadow_sp (global.get $sstack_ptr))
 
-    ;; Set both the switched-from and active fiber indices to 1 since
-    ;; we are
-
     ;; The initial continuation invocation is special as we pass argc
     ;; and argv to it.
     (block $done (result i32)

@@ -21,10 +21,8 @@ static uint32_t cont_table_capacity = initial_table_capacity;
 // Number of entries at the end of `$conts` table that we haven't used so
 // far. Initialised to initial_table_capacity - 1 because we reserve index 0 
 // of the table for null checks.
-// Invariant before first call to wasmfx_grow_cont_table:
+// Invariant:
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity - 1`
-// Invariant after wasmfx_grow_cont_table is called:
-// `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity`
 static_assert(WASMFX_CONT_TABLE_INITIAL_CAPACITY > 0);
 static uint32_t cont_table_unused_size = initial_table_capacity - 1;
 

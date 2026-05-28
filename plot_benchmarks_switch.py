@@ -34,15 +34,19 @@ engines = args.engines
 
 # Parse JSON files to extract benchmark results, we are only interested in the mean times
 data = []
+data_stddev = []
 
 # Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a backend (switch vs non-switch), 
 # and the values are the mean runtimes from the hyperfine output json file
 with open(args.files) as f:
     results = json.load(f)["results"]
 data.append([round(b["mean"], 6) for b in results])
+data_stddev.append([round(b["stddev"], 6) for b in results])
 
 # Unpack data from list of lists
 data = data[0]
+data_stddev = data_stddev[0]
+
 # The width of the bars in the chart
 width = 1
 # Hope this is colourblind-friendly enough for sam
@@ -56,6 +60,7 @@ for i, engine in enumerate(engines):
     # The data varies parameters in the order: benchmark -> switch -> engine
     # Therefore, data for each engine is obtained by:
     engine_data = [data[j] for j in range(i * len(benches), (i+1) * len(benches))]
+    engine_data_stddev = [data_stddev[j] for j in range(i * len(benches), (i+1) * len(benches))]
 
     # Set x values for bar locations, with one group of (two) bars for each switch/non-switch pair
     # Logic: for each benchmark we allocate three bars, where the third one is a gap, so we don't 
@@ -73,6 +78,9 @@ for i, engine in enumerate(engines):
 
     # Keeps every other label, make the rest invisible
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+
+    # Error bars
+    plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
 
     # Readability features
     ax.grid(visible=True, axis="y")

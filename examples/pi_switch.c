@@ -30,7 +30,7 @@ static fiber_t workers[NUM_TASKS];
 // Array of statuses
 static bool worker_status[NUM_TASKS];
 
-void update_state() { 
+void find_worker() { 
   // Update global variable `next` to point to the next available worker (if any).
   uint32_t i = 0;
   for (next = (next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, next = (next+1) % NUM_TASKS) {
@@ -47,7 +47,7 @@ void scheduler(bool worker_done, fiber_t caller) {
     // Mark the current worker as done.
     worker_status[next] = true;
     // Determine whether we should keep going.
-    update_state();
+    find_worker();
     if (!keep_going) {
       // If no more available workers, return to the outer loop.     
       return;
@@ -57,7 +57,7 @@ void scheduler(bool worker_done, fiber_t caller) {
     }    
   }
   // Otherwise, simply switch onto the next available worker.
-  update_state();
+  find_worker();
   fiber_switch(workers[next],&results[next],&caller); 
 }
 

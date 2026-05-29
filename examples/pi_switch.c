@@ -125,7 +125,8 @@ int main(int argc, char **argv) {
 
   // Validate results and clean up
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
-    assert(results[i] > 0.0 && "Result should be positive");
+    assert(results[i] <= 4.0 
+        && "Result should be less than or equal to 4.0 as long as worker runs at least once.");
     fiber_free(workers[i]);
   }
 

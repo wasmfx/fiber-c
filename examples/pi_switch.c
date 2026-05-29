@@ -17,10 +17,6 @@ static uint32_t const BATCH_SIZE = 100000;
 // Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
 static uint32_t const YIELDS = 50;
 
-// Global state for scheduler
-bool keep_going = true;
-uint32_t next = 0;
-
 // Array of results
 static double results[NUM_TASKS];
 
@@ -30,24 +26,27 @@ static fiber_t workers[NUM_TASKS];
 // Array of statuses
 static bool worker_status[NUM_TASKS];
 
-void find_worker() { 
+void find_worker(bool* keep_going, uint32_t* next) { 
   // Update global variable `next` to point to the next available worker (if any).
   uint32_t i = 0;
-  for (next = (next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, next = (next+1) % NUM_TASKS) {
-    if (!worker_status[next]) {
+  for (*next = (*next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, *next = (*next+1) % NUM_TASKS) {
+    if (!worker_status[*next]) {
       break;
     }
   }
   // Update keep_going variable too
-  keep_going = i < NUM_TASKS - 1;
+  *keep_going = i < NUM_TASKS - 1;
 }
 
 void scheduler(bool worker_done, fiber_t caller) { 
+  static bool keep_going = true;
+  static uint32_t next = 0;
+
   if (worker_done) {
     // Mark the current worker as done.
     worker_status[next] = true;
     // Determine whether we should keep going.
-    find_worker();
+    find_worker(&keep_going, &next);
     if (!keep_going) {
       // If no more available workers, return to the outer loop.     
       return;
@@ -57,7 +56,7 @@ void scheduler(bool worker_done, fiber_t caller) {
     }    
   }
   // Otherwise, simply switch onto the next available worker.
-  find_worker();
+  find_worker(&keep_going, &next);
   fiber_switch(workers[next],&results[next],&caller); 
 }
 

@@ -30,9 +30,6 @@ static fiber_t workers[NUM_TASKS];
 // Array of statuses
 static bool worker_status[NUM_TASKS];
 
-// Cache main loop
-fiber_t main_fiber;
-
 void update_state() { 
   // Update global variable `next` to point to the next available worker (if any).
   uint32_t i = 0;
@@ -52,8 +49,8 @@ void scheduler(bool worker_done, fiber_t caller) {
     // Determine whether we should keep going.
     update_state();
     if (!keep_going) {
-      // If no more available workers, switch-return to the outer loop.     
-      fiber_switch_return(main_fiber, NULL);
+      // If no more available workers, return to the outer loop.     
+      return;
     } else {
       // If the current worker is done, switch-return to the next available worker.
       fiber_switch_return(workers[next], &results[next]);
@@ -68,9 +65,6 @@ void* monte_carlo(void *arg, fiber_t caller) {
   double *pi = (double*)(intptr_t)arg;
   double inside = 0;
   double total = 0;
-
-  // Save reference to main loop if this is the first entry to the first worker
-  if (next == 0) { main_fiber = caller; }
 
   for (uint32_t i = 0; i < YIELDS; ++i) {
     for (uint32_t j = 0; j < BATCH_SIZE; ++j) {

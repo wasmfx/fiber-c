@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include <fiber_switch.h>
+
+#define PRINT_RESULTS 0
 
 void* sum(void *arg, fiber_t caller) {
   assert(caller != NULL);
@@ -17,7 +20,7 @@ void* sum(void *arg, fiber_t caller) {
 }
 
 void* run(void *arg, fiber_t caller) {
-  assert(caller != NULL);
+  // assert(caller != NULL);
   fiber_t sum_fiber = fiber_alloc(sum);
   int32_t result = 0, i = 0;
   int32_t const max = (int32_t)(intptr_t)arg;
@@ -45,16 +48,22 @@ void *prog(int argc, char **argv) {
 
   int const i = atoi(argv[1]);
   int32_t result = (int32_t)(intptr_t)fiber_switch(run_fiber, (void*)(intptr_t)i, &run_fiber);
+  assert(result == (i * (i - 1)) / 2);
+
+  #if PRINT_RESULTS
+  printf("%d\n", result);
+  #endif
 
   fiber_free(run_fiber);
 
-  return (void*)(intptr_t)result;
+  return 0;
 }
 
 int main(int argc, char** argv) {
 
-  int32_t const result = (int32_t)(intptr_t)fiber_main(prog, argc, argv);
-  printf("%d\n", result);
+  fiber_main(prog, argc, argv);
 
   return 0;
 }
+
+#undef PRINT_RESULTS

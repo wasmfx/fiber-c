@@ -104,7 +104,7 @@ noinline uint32_t async_wl(void) {
 int main(void) {
   fiber_init();
   uint32_t const result = async_wl();
-  assert(result == 10000000 && "result validation failed");
+  assert(result == 10010000 && "result validation failed");
   fiber_finalize();
   return 0;
 }

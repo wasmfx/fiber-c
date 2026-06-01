@@ -1,6 +1,7 @@
 // An implementation of the fiber_switch.h interface using wasmfx continuations
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "fiber_switch.h"
 
@@ -23,7 +24,7 @@ static uint32_t cont_table_capacity = initial_table_capacity;
 // of the table for null checks.
 // Invariant:
 // `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity - 1`
-static_assert(WASMFX_CONT_TABLE_INITIAL_CAPACITY > 0);
+static_assert(WASMFX_CONT_TABLE_INITIAL_CAPACITY > 0, "WASMFX_CONT_TABLE_INITIAL_CAPACITY must be greater than 0");
 static uint32_t cont_table_unused_size = initial_table_capacity - 1;
 
 // This is a stack of indices into `$conts` that we have previously used, but

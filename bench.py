@@ -49,6 +49,9 @@ def run_benchmarks(benchmarks, engines, filename, path):
             "-L",
             "engine",
             ",".join(engines),
+            "-L",
+            "style",
+            "wasmfx",
             "run-scripts/{benchmark}_{engine}_wasmfx.sh",
         ]
     )
@@ -70,6 +73,9 @@ def run_benchmarks(benchmarks, engines, filename, path):
             "-L",
             "engine",
             ",".join(engines),
+            "-L",
+            "style",
+            "asyncify",
             "run-scripts/{benchmark}_{engine}_asyncify.sh",
         ]
     )

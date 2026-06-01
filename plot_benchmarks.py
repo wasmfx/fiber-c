@@ -77,8 +77,8 @@ else:
 for i, filename in enumerate(files):
     with open(filename) as f:
         results = json.load(f)["results"]
-    data.append([round(b["mean"], 6) for b in results])
-    data_stddev.append([round(b["stddev"], 6) for b in results])
+    data.append([b["mean"] for b in results])
+    data_stddev.append([b["stddev"] for b in results])
 
 data = np.transpose(data)
 data_stddev = np.transpose(data_stddev)

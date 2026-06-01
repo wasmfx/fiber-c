@@ -162,22 +162,51 @@ def main():
     # get binary size data
     get_binary_sizes(benchmarks_to_run, "binary_sizes", path)
     # make binary size chart
-    os.system(
-        f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(benchmarks_to_run)} -o bench_results/{path}/charts"
+    subprocess.check_call(
+        [
+            "python3",
+            "plot_binary_sizes.py",
+            f"bench_results/{path}/binary_sizes.json",
+            "--benchmarks",
+            *benchmarks_to_run,
+            "-o",
+            f"bench_results/{path}/charts",
+        ]
     )
     # run benchmarks to obtain runtime data
     run_benchmarks(benchmarks_to_run, args.engines, "results", path)
     # make runtime charts
-    os.system(
-        f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts"
+    subprocess.check_call(
+        [
+            "python3",
+            "plot_benchmarks.py",
+            f"bench_results/{path}/results_wasmfx.json",
+            f"bench_results/{path}/results_asyncify.json",
+            "--benchmarks",
+            *benchmarks_to_run,
+            "--engines",
+            *args.engines,
+            "-o",
+            f"bench_results/{path}/charts",
+        ]
     )
     # Make extra charts for switch benchmarks
     if args.switch:
         # Put the extra charts in this directory
         os.makedirs(f"bench_results/{path}/charts/switch", exist_ok=True)
         # Run the switch-specific chart script on the wasmfx result file only
-        os.system(
-            f"python3 plot_benchmarks_switch.py bench_results/{path}/results_wasmfx.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts/switch"
+        subprocess.check_call(
+            [
+                "python3",
+                "plot_benchmarks_switch.py",
+                f"bench_results/{path}/results_wasmfx.json",
+                "--benchmarks",
+                *benchmarks_to_run,
+                "--engines",
+                *args.engines,
+                "-o",
+                f"bench_results/{path}/charts/switch",
+            ]
         )
 
 

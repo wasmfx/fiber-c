@@ -19,22 +19,64 @@ switch_benchmarks = config["BENCHMARKS_FIBER_C_SWITCH"]
 
 all_engines = config["ENGINES"]
 
+
 def disabled(engine, benchmark, style):
     if engine == "wasmtime" and style == "switch":
         return True
     return False
 
+
 def generate_scripts():
     subprocess.check_call(["./build.py"])
 
+
 def run_benchmarks(benchmarks, engines, filename, path):
     # call hyperfine to run wasmfx benchmarks
-    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_wasmfx.json", "--export-csv", f"bench_results/{path}/{filename}_wasmfx.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/{benchmark}_{engine}_wasmfx.sh"])
+    subprocess.check_call(
+        [
+            "hyperfine",
+            "--warmup",
+            "1",
+            "--runs",
+            "10",
+            "--export-json",
+            f"bench_results/{path}/{filename}_wasmfx.json",
+            "--export-csv",
+            f"bench_results/{path}/{filename}_wasmfx.csv",
+            "-L",
+            "benchmark",
+            ",".join(benchmarks),
+            "-L",
+            "engine",
+            ",".join(engines),
+            "run-scripts/{benchmark}_{engine}_wasmfx.sh",
+        ]
+    )
     # and now asyncify benchmarks
-    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_asyncify.json", "--export-csv", f"bench_results/{path}/{filename}_asyncify.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/{benchmark}_{engine}_asyncify.sh"])
+    subprocess.check_call(
+        [
+            "hyperfine",
+            "--warmup",
+            "1",
+            "--runs",
+            "10",
+            "--export-json",
+            f"bench_results/{path}/{filename}_asyncify.json",
+            "--export-csv",
+            f"bench_results/{path}/{filename}_asyncify.csv",
+            "-L",
+            "benchmark",
+            ",".join(benchmarks),
+            "-L",
+            "engine",
+            ",".join(engines),
+            "run-scripts/{benchmark}_{engine}_asyncify.sh",
+        ]
+    )
 
-def get_binary_sizes(benchmarks,filename, path):
-    data=[]
+
+def get_binary_sizes(benchmarks, filename, path):
+    data = []
     for benchmark in benchmarks:
         wasmfx_size = os.path.getsize(f"out/{benchmark}_wasmfx.stripped.wasm")
         asyncify_size = os.path.getsize(f"out/{benchmark}_asyncify.stripped.wasm")
@@ -42,42 +84,60 @@ def get_binary_sizes(benchmarks,filename, path):
             "benchmark": benchmark,
             "wasmfx": wasmfx_size,
             "asyncify": asyncify_size,
-            }
+        }
         data.append(entry)
     with open(f"bench_results/{path}/{filename}.json", "w") as f:
-        json.dump(data,f)
+        json.dump(data, f)
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)",
-        default=all_benchmarks
+        "--benchmarks",
+        nargs="*",
+        help="List of benchmarks to run (sieve, itersum, treesum)",
+        default=all_benchmarks,
     )
     parser.add_argument(
-        "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)",
-        default=all_engines
+        "--engines",
+        nargs="*",
+        help="List of engines to run (d8, wasmtime, wizard)",
+        default=all_engines,
     )
     parser.add_argument(
-        "--switch", help="Run switch experiments as well (benchmarks must have a switch counterpart, e.g. itersum and itersum_switch)",
-        default=False, action="store_true"
+        "--switch",
+        help="Run switch experiments as well (benchmarks must have a switch counterpart, e.g. itersum and itersum_switch)",
+        default=False,
+        action="store_true",
     )
-    parser.add_argument("--output", "-o", help="Subdirectory to save results to. Default is `results`, e.g. bench_results/results",
-        default="results"
+    parser.add_argument(
+        "--output",
+        "-o",
+        help="Subdirectory to save results to. Default is `results`, e.g. bench_results/results",
+        default="results",
     )
     args = parser.parse_args()
 
     # Some input validation
     if args.switch:
         if not set(args.benchmarks).issubset(set(switch_benchmarks)):
-            raise ValueError(f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}")
+            raise ValueError(
+                f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}"
+            )
         # Can't run switch experiments on wasmtime right now so we are banning that option
         if not set(args.engines).issubset(set(["d8", "wizard"])):
-            raise ValueError(f"Error: invalid engine name(s). Valid options are: d8, wizard (switch experiments are currently broken on wasmtime)")
+            raise ValueError(
+                f"Error: invalid engine name(s). Valid options are: d8, wizard (switch experiments are currently broken on wasmtime)"
+            )
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):
-            raise ValueError(f"Error: invalid benchmark name(s). Valid options are: {', '.join(all_benchmarks)}")
+            raise ValueError(
+                f"Error: invalid benchmark name(s). Valid options are: {', '.join(all_benchmarks)}"
+            )
     if not set(args.engines).issubset(set(all_engines)):
-        raise ValueError(f"Error: invalid engine name(s). Valid options are: {', '.join(all_engines)}")
+        raise ValueError(
+            f"Error: invalid engine name(s). Valid options are: {', '.join(all_engines)}"
+        )
 
     path = args.output
     benchmarks_to_run = args.benchmarks
@@ -95,22 +155,31 @@ def main():
     # if running switch experiments, update benchmarks to include switch versions of the selected benchmarks
     #    e.g. if user selects "itersum", also add "itersum_switch"
     if args.switch:
-        benchmarks_to_run = list(zip([b + "_switch" for b in benchmarks_to_run], benchmarks_to_run))
-        benchmarks_to_run = list(sum(benchmarks_to_run, ())) # flatten list of tuples
+        benchmarks_to_run = list(
+            zip([b + "_switch" for b in benchmarks_to_run], benchmarks_to_run)
+        )
+        benchmarks_to_run = list(sum(benchmarks_to_run, ()))  # flatten list of tuples
     # get binary size data
-    get_binary_sizes(benchmarks_to_run,"binary_sizes", path)
+    get_binary_sizes(benchmarks_to_run, "binary_sizes", path)
     # make binary size chart
-    os.system(f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(benchmarks_to_run)} -o bench_results/{path}/charts")
+    os.system(
+        f"python3 plot_binary_sizes.py bench_results/{path}/binary_sizes.json --benchmarks {' '.join(benchmarks_to_run)} -o bench_results/{path}/charts"
+    )
     # run benchmarks to obtain runtime data
     run_benchmarks(benchmarks_to_run, args.engines, "results", path)
     # make runtime charts
-    os.system(f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts")
+    os.system(
+        f"python3 plot_benchmarks.py bench_results/{path}/results_wasmfx.json bench_results/{path}/results_asyncify.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts"
+    )
     # Make extra charts for switch benchmarks
     if args.switch:
         # Put the extra charts in this directory
         os.makedirs(f"bench_results/{path}/charts/switch", exist_ok=True)
         # Run the switch-specific chart script on the wasmfx result file only
-        os.system(f"python3 plot_benchmarks_switch.py bench_results/{path}/results_wasmfx.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts/switch")
+        os.system(
+            f"python3 plot_benchmarks_switch.py bench_results/{path}/results_wasmfx.json --benchmarks {' '.join(benchmarks_to_run)} --engines {' '.join(args.engines)} -o bench_results/{path}/charts/switch"
+        )
+
 
 if __name__ == "__main__":
     main()

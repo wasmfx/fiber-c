@@ -150,7 +150,9 @@ plt.errorbar(
     bar_loc,
     ratio,
     yerr=ratio_stddev,
-    fmt=".",
+    fmt="none",
+    capsize=0.5,
+    linewidth=0.5,
     color="black",
     label="Standard Deviation",
 )

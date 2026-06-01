@@ -14,11 +14,11 @@ Script that generates:
     3. $number_of_benchmarks$ bar charts displaying the raw runtime/binary size/etc data for each benchmark
 
 Where
-    (1) is saved in results_dir/relative/relative.png, 
-    (2) is saved in results_dir/absolute_engines/absolute_{engine}.png, 
+    (1) is saved in results_dir/relative/relative.png,
+    (2) is saved in results_dir/absolute_engines/absolute_{engine}.png,
     (3) is saved in results_dir/absolute_benchmarks/absolute_{benchmark}.png
 
-Usage: 
+Usage:
     `python3 plot_benchmarks.py results_wasmfx.json results_asyncify.json --benchmarks itersum --engines wasmtime d8 -o results_dir`
 """
 
@@ -44,7 +44,7 @@ engines = args.engines
 data = []
 data_stddev = []
 
-# Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a backend (wasmfx vs asyncify), 
+# Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a backend (wasmfx vs asyncify),
 # and the values are the mean runtimes from the hyperfine output json file
 for i, filename in enumerate(args.files):
     with open(filename) as f:
@@ -75,7 +75,7 @@ data_stddev_percent = np.divide(data_stddev, data)
 ratio_stddev = ratio * np.sqrt(np.square(data_stddev_percent[:, 0]) + np.square(data_stddev_percent[:, 1]))
 
 # Compute x values for bar locations, with gaps between groups of bars for each engine
-#   eg. x = [0,1,2,4,5,6,8,9,10] for 3 benchmarks across 3 engines, 
+#   eg. x = [0,1,2,4,5,6,8,9,10] for 3 benchmarks across 3 engines,
 #   with a gap of 1 between each group of 3 bars for each engine
 bar_loc = [x for x in np.arange((len(benches) + 1) * len(engines)) if ((x+1) % (len(benches) + 1)) != 0]
 
@@ -104,9 +104,9 @@ plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
 
 # Add a horizontal line at y=1 to indicate where wasmfx and asyncify have equal performance
 plt.axhline(
-    y=1.0, 
+    y=1.0,
     color = 'r',
-    linestyle = '--', 
+    linestyle = '--',
     linewidth = 3,
     label = 'WasmFX = Asyncify'
     )
@@ -121,7 +121,7 @@ else:
 # ----- Next 3 (or rather, len(engines)) charts: absolute times for asyncify and wasmfx for each benchmark, grouped by engine -----
 # --------------
 
-# We want a different chart for each engine where bars are grouped by benchmarks, 
+# We want a different chart for each engine where bars are grouped by benchmarks,
 # and each bar corresponds to a different backend (wasmfx, asyncify).
 for i, engine in enumerate(engines):
     # Get array of data from this engine
@@ -185,7 +185,7 @@ for i, benchmark in enumerate(benches):
     fig, ax = plt.subplots()
     for i in range(len(bench_data)):
         ax.bar(bar_loc[i], bench_data[i], width, label=engines[i % len(engines)], color=bar_colors[i % 2])
-    
+
     # Pad out list of benchmarks to match number of engines
     axis_labels = np.repeat(engines, 2)
     ax.set_xticks(bar_loc, axis_labels)

@@ -8,12 +8,9 @@ Usage:  `./bench.py --help`
 """
 import argparse
 import yaml
-import sys
 import os
 import subprocess
-import shutil
 import json
-from pathlib import Path
 
 config = yaml.safe_load(open("config.yml"))
 

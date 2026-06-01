@@ -1,7 +1,7 @@
 // An implementation of the fiber.h interface using wasmfx continuations
-#include <stdlib.h>
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "fiber.h"
 
@@ -51,6 +51,7 @@ static void** sstack_current_ptrs;
 
 static void init_shadow_stack(cont_table_index_t table_index) {
   char* shadow_stack_bottom = malloc(cont_shadow_stack_size);
+  assert(shadow_stack_bottom != NULL && "init_shadow_stack: malloc failed");
   void* shadow_stack_usable_top =
     ((char*)shadow_stack_bottom) + cont_shadow_stack_size - 0x10;
   sstack_bottom_ptrs[table_index] = shadow_stack_bottom;
@@ -103,6 +104,7 @@ static cont_table_index_t wasmfx_acquire_table_index(void) {
       wasmfx_grow_cont_table(cont_table_capacity);
       free(free_list);
       free_list = malloc(sizeof(uint32_t) * new_cont_table_capacity);
+      assert(free_list != NULL && "wasmfx_acquire_table_index: malloc failed");
 
       // We added `cont_table_capacity` new entries to the table, and then
       // immediately consume one for the new continuation.
@@ -157,9 +159,12 @@ void* fiber_yield(void *arg) {
 
 void fiber_init(void) {
   free_list = malloc(initial_table_capacity * sizeof(uint32_t));
+  assert(free_list != NULL && "fiber_init: malloc failed");
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
   sstack_bottom_ptrs = malloc(initial_table_capacity * sizeof(void*));
+  assert(sstack_bottom_ptrs != NULL && "fiber_init: malloc failed");
   sstack_current_ptrs = malloc(initial_table_capacity * sizeof(void*));
+  assert(sstack_current_ptrs != NULL && "fiber_init: malloc failed");
   wasmfx_fiber_init_wat(&sstack_current_ptrs);
 #else
   wasmfx_fiber_init_wat(NULL);

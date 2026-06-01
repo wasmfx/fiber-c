@@ -79,6 +79,7 @@ struct fiber {
 // Allocates a fiber stack of size stack_size.
 static struct fiber_stack fiber_stack_alloc(size_t stack_size) {
   uint8_t *buffer = malloc(sizeof(uint8_t) * stack_size);
+  assert(buffer != NULL && "fiber_stack_alloc: malloc failed");
   uint8_t *top = buffer;
   uint8_t *end = buffer + stack_size;
   struct fiber_stack stack = (struct fiber_stack) { top, end, /* NULL, */ buffer };
@@ -117,6 +118,7 @@ static volatile struct stack_pool pool;
 // own state. See `wasi-io.h` for asyncify-safe printing functions.
 fiber_t fiber_sized_alloc(size_t stack_size, fiber_entry_point_t entry) {
   fiber_t fiber = (fiber_t)malloc(sizeof(struct fiber));
+  assert(fiber != NULL && "fiber_sized_alloc: malloc failed");
 #if defined STACK_POOL_SIZE && STACK_POOL_SIZE > 0
   (void)stack_size;
   fiber->stack = stack_pool_next(&pool);

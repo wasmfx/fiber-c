@@ -77,22 +77,12 @@ noinline uint32_t async_wl(void) {
     assert(status != FIBER_ERROR && "no fiber should enter an error state");
     count += ans;
 
-    // Clean up and allocate new fiber.
+    // Clean up and allocate new fiber--don't allocate if we're on the last round.
     fiber_free(rs[j]);
-    rs[j] = fiber_alloc(async_worker);
+    if (i + ACTIVE_CONN < total_conn)
+      rs[j] = fiber_alloc(async_worker);
   }
 
-  for (size_t j = 0; j < ACTIVE_CONN; j++) {
-    uint32_t ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
-    assert(status != FIBER_ERROR && "no fiber should enter an error state");
-    assert(ans == stack_kb && "every fiber should yield back its argument");
-
-    ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
-    assert(status != FIBER_ERROR && "no fiber should enter an error state");
-    count += ans;
-
-    fiber_free(rs[j]);
-  }
   free(rs);
 
   __attribute__((unused)) double total_mb = (double)(total_conn * stack_kb) / 1024.0;

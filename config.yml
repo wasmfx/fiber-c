@@ -17,21 +17,21 @@ WIZARD_OPTIONS : "--ext:stack-switching --ext:gc --stack-size=65536 --mode=jit"
 # List of benchmarks
 BENCHMARKS_FIBER_C : [
     "itersum",
-    "sieve",
-    "state",
+    # "sieve",
+    # "state",
     "treesum",
     "c10m",
     "pi",
-    "skynet",
-    "scheduler",
+    # "skynet",
+    # "scheduler",
   ]
 
 # List of switch benchmarks
 BENCHMARKS_FIBER_C_SWITCH : [
     "itersum",
     "treesum",
-    "pi",
-    "scheduler",
+    # "pi",
+    # "scheduler",
 ]
 
 # Arguments for benchmarks that require arguments

@@ -67,20 +67,47 @@ if os.path.isdir(args.files[0]):
 else:
     files = args.files
 
-# Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a
-# backend (wasmfx vs asyncify), and the values are the mean runtimes from the hyperfine output json
-# file
+# Collect all the JSON data into a list of results we can query.
 data = []
-data_stddev = []
 for i, filename in enumerate(files):
+    print(f"Loading data from {filename}...")
     with open(filename) as f:
-        results = json.load(f)["results"]
-    data.append([b["mean"] for b in results])
-    data_stddev.append([b["stddev"] for b in results])
+        data.extend(json.load(f)["results"])
 
-data = np.transpose(data)
-data_stddev = np.transpose(data_stddev)
-print(data_stddev)
+
+# Predicates for the hyperfine output json format, to filter results by
+# benchmark, engine, and style (wasmfx vs asyncify).
+def benchmark_is(result, benchmark):
+    return result["parameters"]["benchmark"] == benchmark
+
+
+def engine_is(result, engine):
+    return result["parameters"]["engine"] == engine
+
+
+def style_is(result, style):
+    return result["parameters"]["style"] == style
+
+
+def fetch_one(data, style, benchmark, engine):
+    return [
+        x
+        for x in data
+        if style_is(x, style) and benchmark_is(x, benchmark) and engine_is(x, engine)
+    ][0]
+
+
+# Order the data in a consistent way according to benchmark and engine as the
+# labels will be given. This way when we select on one dimension, the others are
+# in the same order, which makes it easy to plot.
+def order_canonically(data):
+    return [
+        fetch_one(data, style, benchmark, engine)
+        for style in ["asyncify", "wasmfx"]
+        for engine in engines
+        for benchmark in benches
+    ]
+
 
 # The width of the bars in the chart
 width = 1
@@ -100,15 +127,23 @@ bar_colors = [
 # ------- First chart: ratio of asyncify time to wasmfx time for each benchmark across all engines -----
 # --------------
 
-# Get the chart data: divide first column by second column to obtain wasmfx / asyncify ratio
-ratio = np.divide(data[:, 1], data[:, 0])
+data = order_canonically(data)
+
+data_wasmfx_means = np.array([x["mean"] for x in data if style_is(x, "wasmfx")])
+data_asyncify_means = np.array([x["mean"] for x in data if style_is(x, "asyncify")])
+
+# Get the chart data: divide first column by second column to obtain asyncify / wasmfx ratio
+ratio = np.divide(data_asyncify_means, data_wasmfx_means)
+
 
 # Get the standard deviation for the ratio.
 # First we want the standard deviations as percentages of the mean:
-data_stddev_percent = np.divide(data_stddev, data)
+data_wasmfx_stddev = np.array([x["stddev"] for x in data if style_is(x, "wasmfx")])
+data_asyncify_stddev = np.array([x["stddev"] for x in data if style_is(x, "asyncify")])
 # Then we apply the formula for error propagation for division
 ratio_stddev = ratio * np.sqrt(
-    np.square(data_stddev_percent[:, 0]) + np.square(data_stddev_percent[:, 1])
+    np.square(data_asyncify_stddev / data_asyncify_means)
+    + np.square(data_wasmfx_stddev / data_wasmfx_means)
 )
 
 # Compute x values for bar locations, with gaps between groups of bars for each engine
@@ -172,17 +207,15 @@ else:
     plt.show()
 
 # --------------
-# ----- Next 3 (or rather, len(engines)) charts: absolute times for asyncify and wasmfx for each benchmark, grouped by engine -----
+# ----- Next charts: absolute times for asyncify and wasmfx for each benchmark, grouped by engine -----
 # --------------
 
 # We want a different chart for each engine where bars are grouped by benchmarks,
 # and each bar corresponds to a different backend (wasmfx, asyncify).
 for i, engine in enumerate(engines):
     # Get array of data from this engine
-    engine_data = data[(i) * (len(benches)) : (i + 1) * (len(benches))].flatten()
-    engine_data_stddev = data_stddev[
-        (i) * (len(benches)) : (i + 1) * (len(benches))
-    ].flatten()
+    engine_data = np.array([x["mean"] for x in data if engine_is(x, engine)])
+    engine_data_stddev = np.array([x["stddev"] for x in data if engine_is(x, engine)])
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # Logic: for each benchmark we allocate three bars, where the third one is a gap,
@@ -237,28 +270,15 @@ for i, engine in enumerate(engines):
         plt.show()
 
 # --------------
-# ----- Next n (or rather, len(benches)) charts: absolute times for asyncify and wasmfx, grouped by benchmark -----
+# ----- Next charts: absolute times for asyncify and wasmfx, grouped by benchmark -----
 # --------------
 
 # Now we want a different chart for each benchmark where bars are grouped by engines
 for i, benchmark in enumerate(benches):
     # Get array of data from this benchmark
     # There should always be 2 * len(engines) entries for each benchmark
-    bench_data = []
-    bench_data_stddev = []
-    for j in range(len(engines)):
-        bench_data.append(
-            data[i + j * len(benches)][0]
-        )  # wasmfx time for this benchmark and engine
-        bench_data.append(
-            data[i + j * len(benches)][1]
-        )  # asyncify time for this benchmark and engine
-        bench_data_stddev.append(
-            data_stddev[i + j * len(benches)][0]
-        )  # wasmfx std dev for this benchmark and engine
-        bench_data_stddev.append(
-            data_stddev[i + j * len(benches)][1]
-        )  # asyncify std dev for this benchmark and engine
+    bench_data = [x["mean"] for x in data if benchmark_is(x, benchmark)]
+    bench_data_stddev = [x["stddev"] for x in data if benchmark_is(x, benchmark)]
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # This is the same as the previous chart except we have len(engines) groups of bars

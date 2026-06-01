@@ -7,7 +7,7 @@
 #include <math.h>
 #include <assert.h>
 
-#include <fiber.h>
+#include <fiber_switch.h>
 
 // Parameters
 #define PRINT_RESULTS 0
@@ -16,10 +16,6 @@
 static uint32_t const BATCH_SIZE = 100000;
 // Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
 static uint32_t const YIELDS = 50;
-
-// Global state for scheduler
-bool keep_going = true;
-uint32_t next = 0;
 
 // Array of results
 static double results[NUM_TASKS];
@@ -30,39 +26,42 @@ static fiber_t workers[NUM_TASKS];
 // Array of statuses
 static bool worker_status[NUM_TASKS];
 
-void update_state() { 
+void find_worker(bool* keep_going, uint32_t* next) { 
   // Update global variable `next` to point to the next available worker (if any).
   uint32_t i = 0;
-  for (next = (next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, next = (next+1) % NUM_TASKS) {
-    if (!worker_status[next]) {
+  for (*next = (*next + 1) % NUM_TASKS; i < NUM_TASKS; ++i, *next = (*next+1) % NUM_TASKS) {
+    if (!worker_status[*next]) {
       break;
     }
   }
-   // Update keep_going variable too
-  keep_going = i < NUM_TASKS;
+  // Update keep_going variable too
+  *keep_going = i < NUM_TASKS - 1;
 }
 
-void scheduler() {
-  fiber_result_t status;
-  do {
-    (void)fiber_resume(workers[next], &results[next], &status);
-    switch (status) {
-    case FIBER_OK:
-      worker_status[next] = true;
-      break;
-    case FIBER_YIELD:
-      break;
-    case FIBER_ERROR:
-      abort(); // A fiber should never enter the error state.
-      break;
-    }
-    update_state();
-  } while (keep_going);
+void scheduler(bool worker_done, fiber_t caller) { 
+  static bool keep_going = true;
+  static uint32_t next = 0;
+
+  if (worker_done) {
+    // Mark the current worker as done.
+    worker_status[next] = true;
+    // Determine whether we should keep going.
+    find_worker(&keep_going, &next);
+    if (!keep_going) {
+      // If no more available workers, return to the outer loop.     
+      return;
+    } else {
+      // If the current worker is done, switch-return to the next available worker.
+      fiber_switch_return(workers[next], &results[next]);
+    }    
+  }
+  // Otherwise, simply switch onto the next available worker.
+  find_worker(&keep_going, &next);
+  fiber_switch(workers[next],&results[next],&caller); 
 }
 
-void* monte_carlo(void *arg) {
+void* monte_carlo(void *arg, fiber_t caller) {
   double *pi = (double*)(intptr_t)arg;
-
   double inside = 0;
   double total = 0;
 
@@ -70,7 +69,6 @@ void* monte_carlo(void *arg) {
     for (uint32_t j = 0; j < BATCH_SIZE; ++j) {
       double const x = (double)rand() / ((double)RAND_MAX + 1);
       double const y = (double)rand() / ((double)RAND_MAX + 1);
-
       double const dist = x * x + y * y;
 
       if (fabs(dist - 1.0) < 0.0000000001 || dist < 1.0) {
@@ -79,18 +77,16 @@ void* monte_carlo(void *arg) {
 
       total += 1.0;
     }
-
-    (void)fiber_yield(NULL);
+  scheduler(false, caller);
   }
 
   *pi = (4.0 * inside) / total;
-
+  scheduler(true, caller);
+  // unreachable
   return NULL;
 }
 
-int main(void) {
-  fiber_init();
-
+void *prog(int __attribute__((unused)) argc, char __attribute__((unused)) **argv) {
   // Initialize with fixed seed for deterministic runs
   srand(0xC0FFEE);
 
@@ -98,14 +94,22 @@ int main(void) {
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
     workers[i] = fiber_alloc(monte_carlo);
   }
+
   // Initialize statuses
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
     worker_status[i] = false;
   }
 
-  // Start the scheduler loop which will run the workers
-  scheduler();
+  // Switch onto the initial worker
+  fiber_switch(workers[0], &results[0], &workers[0]);
+  
+  return NULL;
+}
 
+int main(int argc, char **argv) {
+
+  fiber_main(prog, argc, argv);
+  
   #if PRINT_RESULTS
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
     printf("%f\n", results[i]);
@@ -114,12 +118,13 @@ int main(void) {
 
   // Validate results and clean up
   for (uint32_t i = 0; i < NUM_TASKS; ++i) {
-      assert(results[i] <= 4.0 
+    assert(results[i] <= 4.0 
         && "Result should be less than or equal to 4.0 as long as worker runs at least once.");
     fiber_free(workers[i]);
   }
 
-  fiber_finalize();
+  return 0;
 }
+
 #undef PRINT_RESULTS
 #undef NUM_TASKS

@@ -24,6 +24,7 @@ Usage:
 
 import argparse
 import json
+import os
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,9 +53,21 @@ engines = args.engines
 data = []
 data_stddev = []
 
-# Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a backend (wasmfx vs asyncify),
-# and the values are the mean runtimes from the hyperfine output json file
-for i, filename in enumerate(args.files):
+# Load a set of files, either by directory or as an immediate list of files.
+if os.path.isdir(args.files[0]):
+    if len(args.files) > 1:
+        raise ValueError(
+            "files input should be a single dir with all benchmark results, or a list of json files."
+        )
+
+    files = pathlib.Path(args.files[0]).glob("results_*.json")
+else:
+    files = args.files
+
+# Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a
+# backend (wasmfx vs asyncify), and the values are the mean runtimes from the hyperfine output json
+# file
+for i, filename in enumerate(files):
     with open(filename) as f:
         results = json.load(f)["results"]
     data.append([round(b["mean"], 6) for b in results])

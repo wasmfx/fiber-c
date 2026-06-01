@@ -15,10 +15,6 @@
 #define NUM_WORKERS 10
 #define SWITCHES 10000000
 
-// Global state for scheduler
-bool keep_going = true;
-uint32_t next = 0;
-
 // Array of workers
 static fiber_t workers[NUM_WORKERS];
 
@@ -28,43 +24,41 @@ static bool worker_status[NUM_WORKERS];
 // Array of results
 static int32_t results[NUM_WORKERS];
 
-// Reference to main loop
-fiber_t main_fiber;
-
-void update_state() { 
+void find_worker(bool* keep_going, uint32_t* next) { 
   // Update global variable `next` to point to the next available worker (if any).
   uint32_t i = 0;
-  for (next = (next + 1) % NUM_WORKERS; i < NUM_WORKERS; ++i, next = (next+1) % NUM_WORKERS) {
-    if (!worker_status[next]) {
+  for (*next = (*next + 1) % NUM_WORKERS; i < NUM_WORKERS; ++i, *next = (*next+1) % NUM_WORKERS) {
+    if (!worker_status[*next]) {
       break;
     }
   }
   // Update keep_going variable too
-  keep_going = i < NUM_WORKERS - 1;
+  *keep_going = i < NUM_WORKERS - 1;
 }
 
 void scheduler(bool worker_done, fiber_t caller) { 
+  static bool keep_going = true;
+  static uint32_t next = 0;
+
   if (worker_done) {
     // Mark the current worker as done.
     worker_status[next] = true;
     // Find the next available worker and determine if we should keep going.
-    update_state();
+    find_worker(&keep_going, &next);
     if (!keep_going) {
-      // If no more available workers, switch-return to the outer loop.     
-      fiber_switch_return(main_fiber, NULL);
+      // If no more available workers, return to the outer loop.     
+      return;
     } else {
       // If the current worker is done, switch-return to the next available worker.
       fiber_switch_return(workers[next], &results[next]);
     }    
   }
   // Otherwise, simply determine and switch onto the next available worker.
-  update_state();
+  find_worker(&keep_going, &next);
   fiber_switch(workers[next],&results[next],&caller); 
 }
 
 void* increment(void *arg, fiber_t caller) {
-  // Save reference to main loop if this is the first entry to the first worker
-  if (next == 0) { main_fiber = caller; }
   // Pointer to final result
   assert(arg && "null argument");
   int32_t result = *((int32_t*)(intptr_t)arg);
@@ -75,6 +69,9 @@ void* increment(void *arg, fiber_t caller) {
     // Scheduler will call switch
     scheduler(false, caller);
   }
+
+  // Save result
+  *(int32_t *)arg = result;
   // Scheduler will call switch-return
   scheduler(true, caller);
   // unreachable

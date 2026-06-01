@@ -31,9 +31,17 @@ import math
 
 # deal with inputs
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("files", nargs="+", type=pathlib.Path, help="JSON files with benchmark results")
-parser.add_argument("--benchmarks", nargs="*", help="List of benchmarks to run (sieve, itersum, treesum)")
-parser.add_argument("--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)")
+parser.add_argument(
+    "files", nargs="+", type=pathlib.Path, help="JSON files with benchmark results"
+)
+parser.add_argument(
+    "--benchmarks",
+    nargs="*",
+    help="List of benchmarks to run (sieve, itersum, treesum)",
+)
+parser.add_argument(
+    "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)"
+)
 parser.add_argument("-o", "--output", help="Save image to the given filename")
 
 args = parser.parse_args()
@@ -59,7 +67,16 @@ print(data_stddev)
 # The width of the bars in the chart
 width = 1
 # Hope this is colourblind-friendly enough for sam
-bar_colors = ['tab:blue', 'tab:orange', 'tab:cyan', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray']
+bar_colors = [
+    "tab:blue",
+    "tab:orange",
+    "tab:cyan",
+    "tab:red",
+    "tab:purple",
+    "tab:brown",
+    "tab:pink",
+    "tab:gray",
+]
 
 # --------------
 # ------- First chart: ratio of asyncify time to wasmfx time for each benchmark across all engines -----
@@ -72,17 +89,29 @@ ratio = np.divide(data[:, 1], data[:, 0])
 # First we want the standard deviations as percentages of the mean:
 data_stddev_percent = np.divide(data_stddev, data)
 # Then we apply the formula for error propagation for division
-ratio_stddev = ratio * np.sqrt(np.square(data_stddev_percent[:, 0]) + np.square(data_stddev_percent[:, 1]))
+ratio_stddev = ratio * np.sqrt(
+    np.square(data_stddev_percent[:, 0]) + np.square(data_stddev_percent[:, 1])
+)
 
 # Compute x values for bar locations, with gaps between groups of bars for each engine
 #   eg. x = [0,1,2,4,5,6,8,9,10] for 3 benchmarks across 3 engines,
 #   with a gap of 1 between each group of 3 bars for each engine
-bar_loc = [x for x in np.arange((len(benches) + 1) * len(engines)) if ((x+1) % (len(benches) + 1)) != 0]
+bar_loc = [
+    x
+    for x in np.arange((len(benches) + 1) * len(engines))
+    if ((x + 1) % (len(benches) + 1)) != 0
+]
 
 # Plot the data
 fig, ax = plt.subplots()
 for i in range(len(ratio)):
-    ax.bar(bar_loc[i], ratio[i], width, label=benches[i % len(benches)], color=bar_colors[i % len(benches)])
+    ax.bar(
+        bar_loc[i],
+        ratio[i],
+        width,
+        label=benches[i % len(benches)],
+        color=bar_colors[i % len(benches)],
+    )
 
 # Pad out list of engines to match number of benchmarks, so x-axis labels are engines
 axis_labels = np.repeat(engines, len(benches))
@@ -90,10 +119,21 @@ ax.set_xticks(bar_loc, axis_labels)
 
 # Keeps every nth label, make the rest invisible
 n = len(benches)
-[l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != math.ceil(n/2) - 1]
+[
+    l.set_visible(False)
+    for (i, l) in enumerate(ax.xaxis.get_ticklabels())
+    if i % n != math.ceil(n / 2) - 1
+]
 
 # Error bars
-plt.errorbar(bar_loc, ratio, yerr=ratio_stddev, fmt='.', color='black', label='Standard Deviation')
+plt.errorbar(
+    bar_loc,
+    ratio,
+    yerr=ratio_stddev,
+    fmt=".",
+    color="black",
+    label="Standard Deviation",
+)
 
 # Readability features
 ax.grid(visible=True, axis="y")
@@ -103,13 +143,7 @@ plt.ylabel("Speedup (relative to Asyncify)")
 plt.legend(benches, bbox_to_anchor=(1.3, 1), loc="upper right")
 
 # Add a horizontal line at y=1 to indicate where wasmfx and asyncify have equal performance
-plt.axhline(
-    y=1.0,
-    color = 'r',
-    linestyle = '--',
-    linewidth = 3,
-    label = 'WasmFX = Asyncify'
-    )
+plt.axhline(y=1.0, color="r", linestyle="--", linewidth=3, label="WasmFX = Asyncify")
 
 # Export figure
 if args.output:
@@ -125,39 +159,60 @@ else:
 # and each bar corresponds to a different backend (wasmfx, asyncify).
 for i, engine in enumerate(engines):
     # Get array of data from this engine
-    engine_data = data[(i)*(len(benches)):(i+1)*(len(benches))].flatten()
-    engine_data_stddev = data_stddev[(i)*(len(benches)):(i+1)*(len(benches))].flatten()
+    engine_data = data[(i) * (len(benches)) : (i + 1) * (len(benches))].flatten()
+    engine_data_stddev = data_stddev[
+        (i) * (len(benches)) : (i + 1) * (len(benches))
+    ].flatten()
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # Logic: for each benchmark we allocate three bars, where the third one is a gap,
     #   so we don't have multiples of 3 in our list of x-values.
-    bar_loc = [x for x in np.arange(len(benches) * 3) if ((x+1) % 3) != 0]
+    bar_loc = [x for x in np.arange(len(benches) * 3) if ((x + 1) % 3) != 0]
 
     # Plot data
     fig, ax = plt.subplots()
     for i in range(len(engine_data)):
-        ax.bar(bar_loc[i], engine_data[i], width, label=benches[i % len(benches)], color=bar_colors[i % 2])
+        ax.bar(
+            bar_loc[i],
+            engine_data[i],
+            width,
+            label=benches[i % len(benches)],
+            color=bar_colors[i % 2],
+        )
 
     # Pad out list of engines to match number of benchmarks, so x-axis labels are engines
     axis_labels = np.repeat(benches, 2)
     ax.set_xticks(bar_loc, axis_labels)
 
     # Keeps every other label, make the rest invisible
-    [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+    [
+        l.set_visible(False)
+        for (i, l) in enumerate(ax.xaxis.get_ticklabels())
+        if (i + 1) % 2 == 0
+    ]
 
     # Error bars
-    plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
+    plt.errorbar(
+        bar_loc,
+        engine_data,
+        yerr=engine_data_stddev,
+        fmt=".",
+        color="black",
+        label="Standard Deviation",
+    )
 
     # Readability features
     ax.grid(visible=True, axis="y")
     plt.title(f"Benchmark results (absolute times) for {engine}")
     plt.xlabel("Benchmark")
     plt.ylabel("Time (seconds)")
-    plt.legend(['WasmFX', 'Asyncify'], bbox_to_anchor=(1.3, 1), loc="upper right")
+    plt.legend(["WasmFX", "Asyncify"], bbox_to_anchor=(1.3, 1), loc="upper right")
 
     # Export figure
     if args.output:
-        plt.savefig(f"{args.output}/absolute_engines/absolute_{engine}", bbox_inches="tight")
+        plt.savefig(
+            f"{args.output}/absolute_engines/absolute_{engine}", bbox_inches="tight"
+        )
     else:
         plt.show()
 
@@ -172,19 +227,33 @@ for i, benchmark in enumerate(benches):
     bench_data = []
     bench_data_stddev = []
     for j in range(len(engines)):
-        bench_data.append(data[i + j*len(benches)][0]) # wasmfx time for this benchmark and engine
-        bench_data.append(data[i + j*len(benches)][1]) # asyncify time for this benchmark and engine
-        bench_data_stddev.append(data_stddev[i + j*len(benches)][0]) # wasmfx std dev for this benchmark and engine
-        bench_data_stddev.append(data_stddev[i + j*len(benches)][1]) # asyncify std dev for this benchmark and engine
+        bench_data.append(
+            data[i + j * len(benches)][0]
+        )  # wasmfx time for this benchmark and engine
+        bench_data.append(
+            data[i + j * len(benches)][1]
+        )  # asyncify time for this benchmark and engine
+        bench_data_stddev.append(
+            data_stddev[i + j * len(benches)][0]
+        )  # wasmfx std dev for this benchmark and engine
+        bench_data_stddev.append(
+            data_stddev[i + j * len(benches)][1]
+        )  # asyncify std dev for this benchmark and engine
 
     # Set x values for bar locations, with one group of (two) bars for each benchmark
     # This is the same as the previous chart except we have len(engines) groups of bars
-    bar_loc = [x for x in np.arange(len(engines) * 3) if ((x+1) % 3) != 0]
+    bar_loc = [x for x in np.arange(len(engines) * 3) if ((x + 1) % 3) != 0]
 
     # Plot data
     fig, ax = plt.subplots()
     for i in range(len(bench_data)):
-        ax.bar(bar_loc[i], bench_data[i], width, label=engines[i % len(engines)], color=bar_colors[i % 2])
+        ax.bar(
+            bar_loc[i],
+            bench_data[i],
+            width,
+            label=engines[i % len(engines)],
+            color=bar_colors[i % 2],
+        )
 
     # Pad out list of benchmarks to match number of engines
     axis_labels = np.repeat(engines, 2)
@@ -192,20 +261,34 @@ for i, benchmark in enumerate(benches):
 
     # Keeps every other label, make the rest invisible
     n = len(engines)
-    [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
+    [
+        l.set_visible(False)
+        for (i, l) in enumerate(ax.xaxis.get_ticklabels())
+        if (i + 1) % 2 == 0
+    ]
 
     # Error bars
-    plt.errorbar(bar_loc, bench_data, yerr=bench_data_stddev, fmt='.', color='black', label='Standard Deviation')
+    plt.errorbar(
+        bar_loc,
+        bench_data,
+        yerr=bench_data_stddev,
+        fmt=".",
+        color="black",
+        label="Standard Deviation",
+    )
 
     # Readability features
     ax.grid(visible=True, axis="y")
     plt.title(f"Benchmark results (absolute times) for {benchmark}")
     plt.xlabel("Engine")
     plt.ylabel("Time (seconds)")
-    plt.legend(['WasmFX', 'Asyncify'], bbox_to_anchor=(1.3, 1), loc="upper right")
+    plt.legend(["WasmFX", "Asyncify"], bbox_to_anchor=(1.3, 1), loc="upper right")
 
     # Export figure
     if args.output:
-        plt.savefig(f"{args.output}/absolute_benchmarks/absolute_{benchmark}", bbox_inches="tight")
+        plt.savefig(
+            f"{args.output}/absolute_benchmarks/absolute_{benchmark}",
+            bbox_inches="tight",
+        )
     else:
         plt.show()

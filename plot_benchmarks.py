@@ -56,10 +56,6 @@ args = parser.parse_args()
 benches = args.benchmarks
 engines = args.engines
 
-# Parse JSON files to extract benchmark results, we are only interested in the mean times
-data = []
-data_stddev = []
-
 # Load a set of files, either by directory or as an immediate list of files.
 if os.path.isdir(args.files[0]):
     if len(args.files) > 1:
@@ -74,6 +70,8 @@ else:
 # Make an array where each row corresponds to a benchmark/engine pair, each column corresponds to a
 # backend (wasmfx vs asyncify), and the values are the mean runtimes from the hyperfine output json
 # file
+data = []
+data_stddev = []
 for i, filename in enumerate(files):
     with open(filename) as f:
         results = json.load(f)["results"]

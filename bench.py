@@ -29,9 +29,9 @@ def generate_scripts():
 
 def run_benchmarks(benchmarks, engines, filename, path):
     # call hyperfine to run wasmfx benchmarks
-    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_wasmfx.json", "--export-csv", f"bench_results/{path}/{filename}_wasmfx.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_wasmfx.sh"])
+    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_wasmfx.json", "--export-csv", f"bench_results/{path}/{filename}_wasmfx.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/{benchmark}_{engine}_wasmfx.sh"])
     # and now asyncify benchmarks
-    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_asyncify.json", "--export-csv", f"bench_results/{path}/{filename}_asyncify.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/./{benchmark}_{engine}_asyncify.sh"])
+    subprocess.check_call(["hyperfine", "--warmup", "1", "--runs", "10", "--export-json", f"bench_results/{path}/{filename}_asyncify.json", "--export-csv", f"bench_results/{path}/{filename}_asyncify.csv", "-L", "benchmark", ",".join(benchmarks), "-L", "engine", ",".join(engines), "run-scripts/{benchmark}_{engine}_asyncify.sh"])
 
 def get_binary_sizes(benchmarks,filename, path):
     data=[]

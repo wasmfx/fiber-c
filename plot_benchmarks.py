@@ -38,12 +38,19 @@ parser.add_argument(
 parser.add_argument(
     "--benchmarks",
     nargs="*",
-    help="List of benchmarks to run (sieve, itersum, treesum)",
+    help="List of benchmarks to plot (e.g. sieve, itersum, treesum)",
 )
 parser.add_argument(
-    "--engines", nargs="*", help="List of engines to run (d8, wasmtime, wizard)"
+    "--engines", nargs="*", help="List of engines to plot (d8, wasmtime, wizard)"
 )
-parser.add_argument("-o", "--output", help="Save image to the given filename")
+parser.add_argument(
+    "-o",
+    "--output",
+    help="""
+    Save image to the given directory (specific charts will be saved in subdirectories
+    relative/, absolute_engines/, and absolute_benchmarks/)
+    """,
+)
 
 args = parser.parse_args()
 benches = args.benchmarks

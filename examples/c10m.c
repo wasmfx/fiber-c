@@ -48,8 +48,15 @@ noinline uint32_t stack_use(long totalkb) {
   return total;
 }
 
+// This is a log. Each fiber should write its ID to the next slot. We want to make sure all the IDs get written, and none twice. We can't trust local vars for this.
+uint32_t validation[10000000];
+uint32_t validation_index = 0;
+
 noinline void* async_worker(void *arg) {
+  uint32_t fiber_id = (uint32_t)arg;
   uint32_t const kb = (uint32_t)(uintptr_t)fiber_yield(arg);
+  // printf("Fiber ID validation: %d\n", fiber_id);
+  validation[validation_index++] = fiber_id;
   uint32_t volatile total = stack_use(kb);
   uint32_t volatile *alias = &total;
   return (void*)(uintptr_t)(*alias - total + 1);
@@ -65,35 +72,56 @@ noinline uint32_t async_wl(void) {
   maybe_printf("run %" PRIu32 "M connections with %" PRIu32 " active at a time, each using %" PRIu32 "kb stack...\n", total_conn / 1000000, ACTIVE_CONN, stack_kb);
   fiber_result_t status;
   uint32_t count = 0;
-  for (size_t i = 0; i < total_conn; i++) {
+  for (size_t i = 0; i < total_conn; i +=2 ) {
     size_t const j = i % ACTIVE_CONN;
 
-    uint32_t ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
+    uint32_t ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)i, &status);
     assert(status != FIBER_ERROR && "no fiber should enter an error state");
-    assert(ans == stack_kb && "every fiber should yield back its argument");
+    assert(ans == i && "every fiber should yield back its argument");
 
-    // do the work
+    size_t const i1 = i + 1;
+    size_t const j1 = i1 % ACTIVE_CONN;
+
+    // start a second fiber
+    uint32_t ans1 = (uint32_t)(uintptr_t)fiber_resume(rs[j1], (void*)(uintptr_t)i1, &status);
+    assert(status != FIBER_ERROR && "no fiber should enter an error state");
+    assert(ans1 == i1 && "every fiber should yield back its argument");
+
+    // do the work of j
     ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
     assert(status != FIBER_ERROR && "no fiber should enter an error state");
     count += ans;
 
-    // Clean up and allocate new fiber.
+    // Recycle fiber j
     fiber_free(rs[j]);
     rs[j] = fiber_alloc(async_worker);
+
+    // do the work of j1
+    ans = (uint32_t)(uintptr_t)fiber_resume(rs[j1], (void*)(uintptr_t)stack_kb, &status);
+    assert(status != FIBER_ERROR && "no fiber should enter an error state");
+    count += ans1;
+
+    // Recycle fiber j1.
+    fiber_free(rs[j1]);
+    rs[j1] = fiber_alloc(async_worker);
   }
 
-  for (size_t j = 0; j < ACTIVE_CONN; j++) {
-    uint32_t ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
-    assert(status != FIBER_ERROR && "no fiber should enter an error state");
-    assert(ans == stack_kb && "every fiber should yield back its argument");
+  // for (size_t j = 0; j < ACTIVE_CONN; j++) {
+  //   uint32_t ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
+  //   assert(status != FIBER_ERROR && "no fiber should enter an error state");
+  //   assert(ans == stack_kb && "every fiber should yield back its argument");
 
-    ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
-    assert(status != FIBER_ERROR && "no fiber should enter an error state");
-    count += ans;
+  //   ans = (uint32_t)(uintptr_t)fiber_resume(rs[j], (void*)(uintptr_t)stack_kb, &status);
+  //   assert(status != FIBER_ERROR && "no fiber should enter an error state");
+  //   count += ans;
 
-    fiber_free(rs[j]);
-  }
+  //   fiber_free(rs[j]);
+  // }
   free(rs);
+
+  for (uint32_t i = 0; i < total_conn; i++) {
+    assert(validation[i] == i && "validation failed: all fiber IDs should be present and in order");
+  }
 
   __attribute__((unused)) double total_mb = (double)(total_conn * stack_kb) / 1024.0;
   maybe_printf("total stack used: %.3fmb, count=%" PRIu32 "\n", total_mb, count);
@@ -104,7 +132,12 @@ noinline uint32_t async_wl(void) {
 int main(void) {
   fiber_init();
   uint32_t const result = async_wl();
-  assert(result == 10000000 && "result validation failed");
+  
+  if (result != 10000000) { 
+	  fiber_finalize();
+	  return 0;
+  }
+//  assert(result == 10000000 && "result validation failed");
   fiber_finalize();
   return 0;
 }

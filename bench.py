@@ -186,8 +186,7 @@ def main():
         [
             "python3",
             "plot_benchmarks.py",
-            f"bench_results/{path}/results_wasmfx.json",
-            f"bench_results/{path}/results_asyncify.json",
+            f"bench_results/{path}",
             "--benchmarks",
             *benchmarks_to_run,
             "--engines",

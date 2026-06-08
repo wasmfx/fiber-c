@@ -1,17 +1,17 @@
 # List of valid engines
 ENGINES : [ "d8", "wasmtime", "wizard" ]
 
-# Paths to engines and engine-specific options
+# (Relative) paths to engines and engine-specific options
 # Wasmtime
-WASMTIME_PATH : "/opt/wasmfx/wasmfxtime/target/release/wasmtime"
+WASMTIME_PATH : "/wasmfxtime/target/release/wasmtime"
 WASMTIME_OPTIONS : "run --allow-precompiled -W=exceptions,function-references,gc,stack-switching,total-stacks=<STACK_POOL_SIZE>"
 
 # V8
-D8_PATH : "/opt/wasmfx/v8/out/x64.release/d8"
+D8_PATH : "/v8/v8/out/x64.release/d8"
 D8_OPTIONS : "--experimental-wasm-wasmfx load.mjs --"
 
 # Wizard
-WIZARD_PATH : "/opt/wasmfx/wizard-engine/bin/wizeng.x86-64-linux"
+WIZARD_PATH : "/wizard-engine/bin/wizeng.x86-64-linux"
 WIZARD_OPTIONS : "--ext:stack-switching --ext:gc --stack-size=65536 --mode=jit"
 
 # List of benchmarks

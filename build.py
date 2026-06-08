@@ -11,14 +11,18 @@ import argparse
 import yaml
 import sys
 import subprocess
+import os
 from pathlib import Path
 
 # Import config
 config = yaml.safe_load(open("config.yml"))
 
+# Set up environment variables for directory containing engines, defaulting to `/opt/wasmfx`` if not set
+ENGINE_ROOT_DIR = os.getenv("ENGINE_ROOT_DIR", "/opt/wasmfx")
+
 # ---- Script generation ----
 
-SCRIPT_TEMPLATE = f"#!/bin/bash\n setarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}"
+SCRIPT_TEMPLATE = f"#!/bin/bash\nsetarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}"
 
 def make_script(filename: Path, content: str):
     filename.write_text(content)
@@ -63,7 +67,7 @@ def generate_scripts(benchmark: str, engines: list[str]):
                     suffix="wasm"
             # stick this all into the script template
             content = SCRIPT_TEMPLATE.format(
-                engine_path=engine_path,
+                engine_path=ENGINE_ROOT_DIR + engine_path,
                 engine_options=engine_options,
                 benchmark=benchmark,
                 mode=mode,

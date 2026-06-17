@@ -138,7 +138,9 @@ def main():
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):
             raise ValueError(
-                f"Error: invalid benchmark name(s). Valid options are: {', '.join(all_benchmarks)}"
+                "Error: invalid benchmark names "
+                f"{' '.join(set(args.benchmarks) - set(all_benchmarks))}"
+                f". Valid options are: {', '.join(all_benchmarks)}"
             )
     if not set(args.engines).issubset(set(all_engines)):
         raise ValueError(

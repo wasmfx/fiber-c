@@ -80,7 +80,6 @@ for i, engine in enumerate(engines):
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
 
     # Error bars
-    #  plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
     
     # Error bars
     plt.errorbar(

@@ -57,6 +57,12 @@ benches = args.benchmarks
 engines = args.engines
 styles = ["wasmfx", "asyncify"]
 
+if benches is None:
+    raise ValueError("--benchmarks of interest must be specified")
+
+if engines is None:
+    raise ValueError("--engines of interest must be specified")
+
 # Load a set of files, either by directory or as an immediate list of files.
 if os.path.isdir(args.files[0]):
     if len(args.files) > 1:

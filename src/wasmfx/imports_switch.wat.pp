@@ -43,9 +43,9 @@
   ;; .c file.
   (table $conts WASMFX_CONT_TABLE_INITIAL_CAPACITY (ref null $ct2))
 
-
   (tag $yield (result i32))
   (tag $switch-return (param i32 i32))
+  (tag $cancel (param i32 i32))
 
   (func $grow_cont_table (export "wasmfx_grow_cont_table") (param $capacity_delta i32)
     (table.grow $conts (ref.null $ct2) (local.get $capacity_delta))
@@ -131,8 +131,16 @@
         (br $done)
       ) ;; $switch-return: [i32 i32 contref]
       (loop $keep-going (param i32 i32 (ref $cancel-ct)) (result i32)
-        ;; TODO(dhil): clean-up resources
-        (drop) ;; contref
+
+        ;; clean-up resources
+        (block $on_cancel (param i32 i32 (ref $cancel-ct)) (result i32 i32)
+         (try_table (param i32 i32 (ref $cancel-ct)) (result i32 i32)
+              (catch $cancel $on_cancel)
+                (resume_throw $cancel-ct $cancel)
+                (unreachable)
+          )
+        )
+
         ;; Prepare next fiber
         (local.set $arg)
         (global.set $active_fiber_index)

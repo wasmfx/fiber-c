@@ -186,6 +186,7 @@ def main():
                     [style],
                     f"results_{benchmark}_{engine}_{style}",
                     path,
+                    show_output=args.show_output,
                 )
     # get information about the compiler, engines, and args used for this run
     get_run_info(f"bench_results/{path}")

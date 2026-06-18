@@ -6,6 +6,7 @@ Usage:  `./bench.py --help`
         `./bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir`
             # runs selected benchmarks and engines, saves results to `bench_results/results_dir`
 """
+
 import argparse
 import yaml
 import os
@@ -30,7 +31,7 @@ def generate_scripts():
     subprocess.check_call(["./build.py"])
 
 
-def run_benchmarks(benchmarks, engines, filename, path):
+def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
     # call hyperfine to run wasmfx benchmarks
     subprocess.check_call(
         [
@@ -53,7 +54,7 @@ def run_benchmarks(benchmarks, engines, filename, path):
             "style",
             "wasmfx",
             "run-scripts/{benchmark}_{engine}_wasmfx.sh",
-        ]
+        ] + ["--show-output"] if show_output else []
     )
     # and now asyncify benchmarks
     subprocess.check_call(
@@ -77,7 +78,7 @@ def run_benchmarks(benchmarks, engines, filename, path):
             "style",
             "asyncify",
             "run-scripts/{benchmark}_{engine}_asyncify.sh",
-        ]
+        ] + ["--show-output"] if show_output else []
     )
 
 
@@ -121,6 +122,11 @@ def main():
         "-o",
         help="Subdirectory to save results to. Default is `results`, e.g. bench_results/results",
         default="results",
+    )
+    parser.add_argument(
+        "--show-output",
+        help="Ask hyperfine to --show-output, which helps for debugging",
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -182,7 +188,9 @@ def main():
         ]
     )
     # run benchmarks to obtain runtime data
-    run_benchmarks(benchmarks_to_run, args.engines, "results", path)
+    run_benchmarks(
+        benchmarks_to_run, args.engines, "results", path, show_output=args.show_output
+    )
     # make runtime charts
     subprocess.check_call(
         [

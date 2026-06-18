@@ -7,10 +7,7 @@ e.g. `./run-scripts/sieve1_d8_wasmfx.sh`. Configurations are in config.yml.
 Usage:  `./build.py`
 """
 
-import argparse
 import yaml
-import sys
-import subprocess
 import os
 from pathlib import Path
 

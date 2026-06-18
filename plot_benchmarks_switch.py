@@ -80,7 +80,19 @@ for i, engine in enumerate(engines):
     [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if (i+1) % 2 == 0]
 
     # Error bars
-    plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
+    #  plt.errorbar(bar_loc, engine_data, yerr=engine_data_stddev, fmt='.', color='black', label='Standard Deviation')
+    
+    # Error bars
+    plt.errorbar(
+        np.array(bar_loc).flatten(),
+        engine_data,
+        yerr=engine_data_stddev,
+        fmt="none",
+        capsize=3,
+        linewidth=0.5,
+        color="black",
+        label="Standard Deviation",
+    )
 
     # Readability features
     ax.grid(visible=True, axis="y")

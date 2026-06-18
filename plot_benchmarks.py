@@ -97,11 +97,16 @@ def style_is(result, style):
 
 
 def fetch_one(data, style, benchmark, engine):
-    return [
+    results = [
         x
         for x in data
         if style_is(x, style) and benchmark_is(x, benchmark) and engine_is(x, engine)
-    ][0]
+    ]
+    if len(results) < 1:
+        raise ValueError(f"No data for {style} {benchmark} {engine}.")
+    if len(results) > 1:
+        raise ValueError(f"Too many data points for {style} {benchmark} {engine}!")
+    return results[0]
 
 
 def organize(data):

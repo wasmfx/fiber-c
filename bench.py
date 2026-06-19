@@ -54,7 +54,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "style",
             "wasmfx",
             "run-scripts/{benchmark}_{engine}_wasmfx.sh",
-        ] + ["--show-output"] if show_output else []
+        ] + (["--show-output"] if show_output else [])
     )
     # and now asyncify benchmarks
     subprocess.check_call(
@@ -78,7 +78,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "style",
             "asyncify",
             "run-scripts/{benchmark}_{engine}_asyncify.sh",
-        ] + ["--show-output"] if show_output else []
+        ] + (["--show-output"] if show_output else [])
     )
 
 

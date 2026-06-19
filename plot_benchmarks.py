@@ -70,21 +70,25 @@ if os.path.isdir(args.files[0]):
             "files input should be a single dir with all benchmark results, or a list of json files."
         )
 
-    files = pathlib.Path(args.files[0]).glob("results_*.json")
+    results_files = pathlib.Path(args.files[0]).glob("results_*.json")
+    info_files = pathlib.Path(args.files[0]).glob("*_info.json")
 else:
-    files = args.files
+    results_files = [f for f in args.files if f.name.startswith("results_")]
+    info_files = [f for f in args.files if f.name.endswith("_info.json")]
 
 # Collect all the JSON data into a list of results we can query.
 data = []
-for i, filename in enumerate(files):
+for i, filename in enumerate(results_files):
     print(f"Loading data from {filename}...")
     with open(filename) as f:
         data.extend(json.load(f)["results"])
 
-# Load JSON files containing compiler/engine/parameter info using hardcoded paths.
-compiler_details = json.load(open("out/compiler_info.json"))
-engine_details = json.load(open("out/engine_info.json"))
-param_details = json.load(open("out/param_info.json"))
+# Load JSON files containing compiler/engine/parameter into a dict
+build_info = {}
+for i, filename in enumerate(info_files):
+    print(f"Loading build data from {filename}...")
+    with open(filename) as f:
+        build_info.update(json.load(f))
 
 # Predicates for the hyperfine output json format, to filter results by
 # benchmark, engine, and style (wasmfx vs asyncify).
@@ -253,20 +257,20 @@ ax2.tick_params(axis='y', colors='white')
 
 # Generate string containing compiler info
 compile_info = "\n".join([
-    compiler_details["wasm_opt_ver"] 
+    build_info["wasm_opt_ver"] 
         + "with " 
-        + compiler_details["wasm_opt_flags"],
-    compiler_details["wasicc_ver"] 
+        + build_info["wasm_opt_flags"],
+    build_info["wasicc_ver"] 
         + "with " 
-        + compiler_details["wasicc_flags"],
-    compiler_details["wasmfxtime_ver"]
+        + build_info["wasicc_flags"],
+    build_info["wasmfxtime_ver"]
 ])
 
 # Generate string containing engine info, based on the engines that were used in this run
-engine_info = "\n".join([engine_details[engine] for engine in engines])
+engine_info = "\n".join([build_info[engine] for engine in engines])
 
 # Do the same for benchmark arguments
-args_info = "\n".join([bench + ": " + param_details[bench] for bench in benches])
+args_info = "\n".join([bench + ": " + build_info[bench] for bench in benches])
 
 # Now put these on the lower subplot.
 ax2.text(0.5, 8, 'Compilation info', weight='bold', fontsize=10)
@@ -354,7 +358,7 @@ for i, engine in enumerate(engines):
 
     # Version of the current engine being charted
     ax2.text(0.5, 4, 'Engine version', weight='bold', fontsize=10)
-    ax2.text(0.5, 3, engine_details[engine], fontsize=9 )
+    ax2.text(0.5, 3, build_info[engine], fontsize=9 )
 
     # Export figure
     if args.output:
@@ -429,7 +433,7 @@ for i, benchmark in enumerate(benches):
     ax2.text(0.5, 5.5, compile_info, fontsize=9 )
 
     ax2.text(5.5, 8, f'Benchmark arguments ({benchmark})', weight='bold', fontsize=10)
-    ax2.text(5.5, 7, param_details[benchmark], fontsize=9 )
+    ax2.text(5.5, 7, build_info[benchmark], fontsize=9 )
 
     # Version of the current engine being charted
     ax2.text(0.5, 4, 'Engine version', weight='bold', fontsize=10)

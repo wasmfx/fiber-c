@@ -39,7 +39,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "--warmup",
             "1",
             "--runs",
-            "10",
+            "3",
             "--export-json",
             f"bench_results/{path}/{filename}_wasmfx.json",
             "--export-csv",
@@ -54,7 +54,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "style",
             "wasmfx",
             "run-scripts/{benchmark}_{engine}_wasmfx.sh",
-        ] + ["--show-output"] if show_output else []
+        ] + (["--show-output"] if show_output else [])
     )
     # and now asyncify benchmarks
     subprocess.check_call(
@@ -63,7 +63,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "--warmup",
             "1",
             "--runs",
-            "10",
+            "3",
             "--export-json",
             f"bench_results/{path}/{filename}_asyncify.json",
             "--export-csv",
@@ -78,7 +78,7 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "style",
             "asyncify",
             "run-scripts/{benchmark}_{engine}_asyncify.sh",
-        ] + ["--show-output"] if show_output else []
+        ] + (["--show-output"] if show_output else [])
     )
 
 
@@ -96,6 +96,11 @@ def get_binary_sizes(benchmarks, filename, path):
     with open(f"bench_results/{path}/{filename}.json", "w") as f:
         json.dump(data, f)
 
+def get_run_info():
+    # Run the three scripts in ../run_info
+    subprocess.check_call(["python3", "run_info/compiler_info.py"])
+    subprocess.check_call(["python3", "run_info/engine_info.py"])
+    subprocess.check_call(["python3", "run_info/param_info.py"])
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -190,6 +195,15 @@ def main():
     # run benchmarks to obtain runtime data
     run_benchmarks(
         benchmarks_to_run, args.engines, "results", path, show_output=args.show_output
+    )
+    # get information about the compiler, engines, and args used for this run
+    get_run_info()
+    # Save a copy of the compiler/engine/arg info to the results directory
+    for filename in ["compiler_info", "engine_info", "param_info"]:
+        subprocess.check_call(
+            ["cp", f"out/{filename}.json",
+                f"bench_results/{path}/{filename}.json"
+            ]
     )
     # make runtime charts
     subprocess.check_call(

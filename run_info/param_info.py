@@ -13,34 +13,31 @@ import json
 # We get the treesum and itersum params from the config file.
 config = yaml.safe_load(open("config.yml"))
 
-# We sed the pi and scheduler params
-
-# sed commands to get number of fibers arguments for pi and scheduler benchmarks
-pi_tasks_cmd = """awk '/#define NUM_TASKS/ { sub(".* ", ""); print }' examples/pi.c"""
-scheduler_workers_cmd = """awk '/#define NUM_WORKERS/ { sub(".* ", ""); print }' examples/scheduler.c"""
-
-# now run those commands
-pi_tasks_param = subprocess.check_output(pi_tasks_cmd, shell=True, text=True).strip()
-scheduler_workers_param = subprocess.check_output(scheduler_workers_cmd, shell=True, text=True).strip()
+# We sed the pi and scheduler for number of fibers
+pi_tasks_param = subprocess.check_output(["awk", '/#define NUM_TASKS/ { sub(".* ", ""); print }', "examples/pi.c"], text=True).strip()
+scheduler_workers_param = subprocess.check_output(["awk", '/#define NUM_WORKERS/ { sub(".* ", ""); print }', "examples/scheduler.c"], text=True).strip()
 
 # Then sed the number of context switches
-pi_yields_cmd = """awk '/YIELDS =/ { sub(".* ", ""); gsub(/;/, ""); print }' examples/pi.c"""
-scheduler_switches_cmd = """awk '/#define SWITCHES/ { sub(".* ", ""); print }' examples/scheduler.c"""
+pi_yields_param = subprocess.check_output(["awk", '/YIELDS =/ { sub(".* ", ""); gsub(/;/, ""); print }', "examples/pi.c"], text=True).strip()
+scheduler_switches_param = subprocess.check_output(["awk", '/#define SWITCHES/ { sub(".* ", ""); print }', "examples/scheduler.c"], text=True).strip()
 
-# run the commands
-pi_yields_param = subprocess.check_output(pi_yields_cmd, shell=True, text=True).strip()
-scheduler_switches_param = subprocess.check_output(scheduler_switches_cmd, shell=True, text=True).strip()
+def main(arg):
+    # make the output directory if necessary
+    os.makedirs(str(arg), exist_ok=True)
 
-# make the output directory if necessary
-os.makedirs(f"out", exist_ok=True)
+    with open(f"{str(arg)}/param_info.json", "w") as f:
+        json.dump({
+            "treesum": str(config["BENCHMARK_ARGS"]["treesum"]),
+            "itersum": str(config["BENCHMARK_ARGS"]["itersum"]),
+            "pi": 
+                ("tasks= " + pi_tasks_param + ", yields= " + pi_yields_param),
+            "scheduler": 
+                ("workers= " + scheduler_workers_param + ", switches= " + scheduler_switches_param),
+            "c10m" : "N/A",
+        }, f)
 
-with open("out/param_info.json", "w") as f:
-    json.dump({
-        "treesum": str(config["BENCHMARK_ARGS"]["treesum"]),
-        "itersum": str(config["BENCHMARK_ARGS"]["itersum"]),
-        "pi": 
-            ("tasks= " + pi_tasks_param + ", yields= " + pi_yields_param),
-        "scheduler": 
-            ("workers= " + scheduler_workers_param + ", switches= " + scheduler_switches_param),
-        "c10m" : "N/A",
-    }, f)
+if __name__ == "__main__":
+    import sys
+    # Set default output directory to "out" if no argument is provided
+    arg = sys.argv[1] if len(sys.argv) > 1 else "out"
+    main(arg)

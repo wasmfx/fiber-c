@@ -57,23 +57,30 @@ wasicc_flags = waiscc_flags[waiscc_flags.index("-O"):][:3]
 # Extract version number from wasmfxtime_ver (removing long number at the end)
 wasmfxtime_ver = strip_brackets(wasmfxtime_ver)
 
-# make the output directory if necessary
-os.makedirs(f"out", exist_ok=True)
+def main(arg):
+    # make the output directory if necessary
+    os.makedirs(str(arg), exist_ok=True)
 
-# Write this stuff to a json
-with open("out/compiler_info.json", "w") as f:
-    json.dump({
-        "wasm_opt_ver" : wasm_opt_ver,
-        "wasm_opt_flags" : wasm_opt_flags,
-        "wasicc_ver" : wasicc_ver,
-        "wasicc_flags" : wasicc_flags,
-        "wasmfxtime_ver" : wasmfxtime_ver,
-        # The commented out lines dump *all* info, which we might want at some point!
-        #"wasm_opt_flags" : config["wasm_opt_flags"],
-        #"asyncify_flags" : config["asyncify_flags"],
-        #"wasm_merge_ver" : wasm_merge_ver,
-        #"wasm_merge_flags" : config["wasm_merge_flags"],
-        #"wasicc_flags" : config["wasi_flags"],
-        #"wasm_interp_ver" : wasm_interp_ver,
-        #"wasmtime_ver" : wasmtime_ver,
-    }, f)
+    # Write this stuff to a json
+    with open(f"{str(arg)}/compiler_info.json", "w") as f:
+        json.dump({
+            "wasm_opt_ver" : wasm_opt_ver,
+            "wasm_opt_flags" : wasm_opt_flags,
+            "wasicc_ver" : wasicc_ver,
+            "wasicc_flags" : wasicc_flags,
+            "wasmfxtime_ver" : wasmfxtime_ver,
+            # The commented out lines dump *all* info, which we might want at some point!
+            #"wasm_opt_flags" : config["wasm_opt_flags"],
+            #"asyncify_flags" : config["asyncify_flags"],
+            #"wasm_merge_ver" : wasm_merge_ver,
+            #"wasm_merge_flags" : config["wasm_merge_flags"],
+            #"wasicc_flags" : config["wasi_flags"],
+            #"wasm_interp_ver" : wasm_interp_ver,
+            #"wasmtime_ver" : wasmtime_ver,
+        }, f)
+
+if __name__ == "__main__":
+    import sys
+    # Set default output directory to "out" if no argument is provided
+    arg = sys.argv[1] if len(sys.argv) > 1 else "out"
+    main(arg)

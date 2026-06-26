@@ -28,12 +28,19 @@ def main(arg):
     with open(f"{str(arg)}/param_info.json", "w") as f:
         json.dump({
             "treesum": str(config["BENCHMARK_ARGS"]["treesum"]),
+            "treesum_switch": str(config["BENCHMARK_ARGS"]["treesum"]),
             "itersum": str(config["BENCHMARK_ARGS"]["itersum"]),
+            "itersum_switch": str(config["BENCHMARK_ARGS"]["itersum"]),
             "pi": 
+                ("tasks= " + pi_tasks_param + ", yields= " + pi_yields_param),
+            "pi_switch": 
                 ("tasks= " + pi_tasks_param + ", yields= " + pi_yields_param),
             "scheduler": 
                 ("workers= " + scheduler_workers_param + ", switches= " + scheduler_switches_param),
+            "scheduler_switch": 
+                ("workers= " + scheduler_workers_param + ", switches= " + scheduler_switches_param),
             "c10m" : "N/A",
+            "c10m_switch" : "N/A",
         }, f)
 
 if __name__ == "__main__":

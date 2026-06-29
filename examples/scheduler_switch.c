@@ -10,10 +10,8 @@
 
 #include <fiber_switch.h>
 
-// Parameters
-#define PRINT_RESULTS 0
-#define NUM_WORKERS 10
-#define SWITCHES 10000000
+// Values for `NUM_WORKERS` and `SWITCHES`
+#include "params.h"
 
 // Array of workers
 static fiber_t workers[NUM_WORKERS];

@@ -9,13 +9,8 @@
 
 #include <fiber_switch.h>
 
-// Parameters
-#define PRINT_RESULTS 0
-#define NUM_TASKS 1000
-// Number of samples taken between yields.
-static uint32_t const BATCH_SIZE = 100000;
-// Number of batches to run in total. Each fiber will take YIELDS * BATCH_SIZE samples
-static uint32_t const YIELDS = 50;
+// Values for `PRINT_RESULTS`, `NUM_TASKS`, `BATCH_SIZE`, `YIELDS`
+#include "params.h"
 
 // Array of results
 static double results[NUM_TASKS];
@@ -125,6 +120,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
-#undef PRINT_RESULTS
-#undef NUM_TASKS

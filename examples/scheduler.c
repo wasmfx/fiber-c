@@ -11,10 +11,8 @@
 
 #include <fiber.h>
 
-// Parameters
-#define PRINT_RESULTS 0
-#define NUM_WORKERS 10
-#define SWITCHES 10000000
+// Values for `NUM_WORKERS` and `SWITCHES`
+#include "params.h"
 
 // Global state for scheduler
 bool keep_going = true;

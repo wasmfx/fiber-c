@@ -137,7 +137,7 @@ render() {
             }
             if (planeHit(&viewpoint, &ray, &planenormal, &hitPt)) {
                 char value;
-                if (((int)(hitPt.x / 1.0) + (int)(hitPt.z / 1.0)) % 2) {
+                if (((int)(floor(hitPt.x / 1.0)) + (int)(floor(hitPt.z / 1.0))) % 2) {
                     value = 0xFF;
                 } else {
                     value = 0x00;

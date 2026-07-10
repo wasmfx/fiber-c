@@ -97,15 +97,10 @@ sphereHit(const struct pt *viewpoint, const struct pt *viewdir, const struct pt 
 void
 setPixel(char *buffer, int width, int i, int j, char alpha, char blue, char green, char red)
 {
-    // I don't know why the -264 offset is needed :-/
-    // buffer[4 * (i*width + j - 264) + 0] = alpha;
-    // buffer[4 * (i*width + j - 264) + 1] = blue;
-    // buffer[4 * (i*width + j - 264) + 2] = green;
-    // buffer[4 * (i*width + j - 264) + 3] = red;
-    buffer[4 * (i*width + j - 264) + 0] = red;
-    buffer[4 * (i*width + j - 264) + 1] = green;
-    buffer[4 * (i*width + j - 264) + 2] = blue;
-    buffer[4 * (i*width + j - 264) + 3] = alpha;
+    buffer[4 * (i*width + j) + 0] = red;
+    buffer[4 * (i*width + j) + 1] = green;
+    buffer[4 * (i*width + j) + 2] = blue;
+    buffer[4 * (i*width + j) + 3] = alpha;
 }
 
 export("getBuffer")

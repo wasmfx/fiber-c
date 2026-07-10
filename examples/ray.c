@@ -17,7 +17,8 @@ const struct pt viewpoint =  {0, 3, 0};
 const struct pt cameraAngle =  {0, 0, 1};
 const struct pt planenormal =  {0, 1, 0};
 
-const struct pt sphereCenter =  {-1, 1, 70};
+//const
+struct pt sphereCenter =  {-1, 1, 70};
 const float sphereRadius = 1;
 
 const struct pt lightSource = {10, 20, 0};
@@ -111,7 +112,8 @@ getBuffer() {
 
 export("render")
 int
-render() {
+render(int time) {
+    sphereCenter.z = 0 + time;
     for (int i = 0; i < HEIGHT; i++){
         for (int j = 0; j < WIDTH; j++){
             struct pt ray = {

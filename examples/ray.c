@@ -119,18 +119,6 @@ int
 render() {
     for (int i = 0; i < HEIGHT; i++){
         for (int j = 0; j < WIDTH; j++){
-            // if (((i/4 + j/4) % 2)) {
-            //     BUFFER[4 * (i*WIDTH + j) + 0] = 0xFF;
-            //     BUFFER[4 * (i*WIDTH + j) + 1] = 0xA0;
-            //     BUFFER[4 * (i*WIDTH + j) + 2] = 0x00;
-            //     BUFFER[4 * (i*WIDTH + j) + 3] = 0x00;
-            // } else {
-            //     BUFFER[4 * (i*WIDTH + j) + 0] = 0xFF;
-            //     BUFFER[4 * (i*WIDTH + j) + 1] = 0x20;
-            //     BUFFER[4 * (i*WIDTH + j) + 2] = 0xC0;
-            //     BUFFER[4 * (i*WIDTH + j) + 3] = 0xC0;
-            // }
-
             struct pt ray = {
                 // Note: distorted, not normalized.
                 ((float)j/WIDTH - 0.5) * 0.2,

@@ -142,7 +142,7 @@ async function run() {
 				timeBase = newTimeBase;
 			}
 			time += 1;
-			setTimeout(doFrame, 10);
+			setTimeout(doFrame, 1);
 		}
 		doFrame();
 	});

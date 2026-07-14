@@ -1,3 +1,8 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "fiber.h"
 #include "math.h"
 
 #define min(x, y) ( (x) < (y) ? (x) : (y) )
@@ -151,4 +156,104 @@ render(int time) {
         }
     }
     return 747;
+}
+
+void *
+render_stub(void *arg) {
+    int time = (int)(intptr_t)arg;
+    render(time);
+    return NULL;
+}
+
+#define MAX_TASKS 800
+
+// Array of workers
+static fiber_t workers[MAX_TASKS];
+
+// Array of statuses
+static bool fiber_ready[MAX_TASKS];
+static bool fiber_allocated[MAX_TASKS];
+static void *fiber_arg[MAX_TASKS];
+
+void
+scheduler_init() {
+  fiber_init();
+  for (uint32_t i = 0; i < MAX_TASKS; ++i) {
+    fiber_ready[i] = false;
+  }
+}
+
+void
+scheduler_loop() {
+  bool keep_going = true;
+  uint32_t next = 0;
+  fiber_result_t status;
+  do {
+    if (!fiber_allocated[next] || !fiber_ready[next]) {
+      return;
+    }
+    (void)fiber_resume(workers[next], fiber_arg[next], &status);
+    fiber_arg[next] = NULL;  // The arg only gets passed to the starting function; clear it afterwards.
+    switch (status) {
+    case FIBER_OK:
+      fiber_ready[next] = false;
+      fiber_allocated[next] = false;
+      break;
+    case FIBER_YIELD:
+      fiber_ready[next] = true;
+      break;
+    case FIBER_ERROR:
+      abort(); // A fiber should never enter the error state.
+      break;
+    }
+
+    // Find a ready fiber.
+    // `next` tracks the identity of the fiber.
+    // i counts the number of fibers checked; since `next` wraps around the array,
+    // we use i to ensure we just check each fiber once.
+    uint32_t i = 0;
+    for (next = (next + 1) % MAX_TASKS; i < MAX_TASKS; ++i, next = (next+1) % MAX_TASKS) {
+      if (fiber_allocated[next] && fiber_ready[next]) {
+        break;
+      }
+    }
+    keep_going = i < MAX_TASKS;
+  } while (keep_going);
+}
+
+void
+scheduler_finalize() {
+  for (uint32_t i = 0; i < MAX_TASKS; ++i) {
+    fiber_free(workers[i]);
+  }
+
+  fiber_finalize();
+}
+
+void
+scheduler_spawn(fiber_entry_point_t func, void *arg) {
+  for (uint32_t id = 0; id < MAX_TASKS; ++id) {
+      if (!fiber_allocated[id]) {
+          workers[id] = fiber_alloc(func);
+          fiber_ready[id] = true;
+          fiber_allocated[id] = true;
+          fiber_arg[id] = arg;
+          return;
+      }
+  }
+  abort(); // No available fiber slots.
+}
+
+export("render_main")
+int
+render_main(int time) {
+    int result = -1;
+    time = time+0;
+    scheduler_init();
+    // result = render(time);
+    scheduler_spawn((fiber_entry_point_t)render_stub, (void *)(intptr_t)time);
+    scheduler_loop();
+    scheduler_finalize();
+
+    return result;
 }

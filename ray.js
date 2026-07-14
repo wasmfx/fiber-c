@@ -121,10 +121,10 @@ async function run() {
 		var maxFrameRate = 0;
 		var time = 0;
 
-		const byteArray = new Uint8ClampedArray( instance.exports.memory.buffer, bitmapPtr, width * height * 4 );
-		const img = new ImageData( byteArray, width, height );
 		function doFrame() {
-			instance.exports.render(time);
+			instance.exports.render_main(time);
+			const byteArray = new Uint8ClampedArray( instance.exports.memory.buffer, bitmapPtr, width * height * 4 );
+			const img = new ImageData( byteArray, width, height );
 			ctx.putImageData( img, 0, 0 );
 			numFrames++;
 			const newTimeBase = performance.now();

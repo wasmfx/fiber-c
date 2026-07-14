@@ -95,7 +95,8 @@ class Wasi {
 
 async function run() {
 	// load the wasm file
-	const response = await fetch("out/ray_asyncify.wasm");
+	// const response = await fetch("out/ray_asyncify.wasm");
+	const response = await fetch("out/ray_wasmfx.wasm");
 	const binary = await response.arrayBuffer();
 	// import `Wasi` to use it
 	const wasi = new Wasi({

@@ -15,7 +15,7 @@ static char BUFFER[4 * HEIGHT * WIDTH] = {0};
 #define export(NAME) __attribute__((export_name(NAME)))
 
 
-#define MAX_TASKS 800
+#define MAX_TASKS 1800
 
 // Array of workers
 static fiber_t workers[MAX_TASKS];
@@ -30,6 +30,8 @@ scheduler_init() {
   fiber_init();
   for (uint32_t i = 0; i < MAX_TASKS; ++i) {
     fiber_ready[i] = false;
+    fiber_allocated[i] = false;
+    fiber_arg[i] = NULL;
   }
 }
 
@@ -46,6 +48,7 @@ scheduler_loop() {
     fiber_arg[next] = NULL;  // The arg only gets passed to the starting function; clear it afterwards.
     switch (status) {
     case FIBER_OK:
+      fiber_free(workers[next]);
       fiber_ready[next] = false;
       fiber_allocated[next] = false;
       break;
@@ -74,13 +77,18 @@ scheduler_loop() {
 void
 scheduler_finalize() {
   for (uint32_t i = 0; i < MAX_TASKS; ++i) {
-    fiber_free(workers[i]);
+    if (fiber_allocated[i]) {
+      fiber_ready[i] = false;
+      fiber_allocated[i] = false;
+      fiber_arg[i] = NULL;
+      fiber_free(workers[i]);
+    }
   }
 
   fiber_finalize();
 }
 
-void
+fiber_t
 scheduler_spawn(fiber_entry_point_t func, void *arg) {
   for (uint32_t id = 0; id < MAX_TASKS; ++id) {
       if (!fiber_allocated[id]) {
@@ -88,7 +96,7 @@ scheduler_spawn(fiber_entry_point_t func, void *arg) {
           fiber_ready[id] = true;
           fiber_allocated[id] = true;
           fiber_arg[id] = arg;
-          return;
+          return workers[id];
       }
   }
   abort(); // No available fiber slots.
@@ -195,49 +203,83 @@ getBuffer() {
     return BUFFER;
 }
 
+void
+render_pixel(int i, int j) {
+    struct pt ray = {
+        // Note: distorted, not normalized.
+        ((float)j/WIDTH - 0.5) * 0.2,
+        -((float)i/HEIGHT - 0.5) * 0.2,
+        1,
+    };
+
+    struct pt hitPt;
+
+    if (sphereHit(&viewpoint, &ray, &sphereCenter, sphereRadius, &hitPt)) {
+        struct pt sphereVector;
+        struct pt lightVector;
+        diff(&hitPt, &sphereCenter, &sphereVector);
+        normalize(&sphereVector);
+        diff(&lightSource, &sphereCenter, &lightVector);
+        normalize(&lightVector);
+        float incidence = dot(&sphereVector, &lightVector);
+        incidence = max(incidence, 0);
+        setPixel(BUFFER, WIDTH, i, j, 0xFF, 0xFF * incidence, 0x00, 0x7F * incidence + 0x80);
+        return;
+    }
+    if (planeHit(&viewpoint, &ray, &planenormal, &hitPt)) {
+        char value;
+        if (((int)(floor(hitPt.x / 1.0)) + (int)(floor(hitPt.z / 1.0))) % 2) {
+            value = 0xFF;
+        } else {
+            value = 0x00;
+        }
+        setPixel(BUFFER, WIDTH, i, j, 0xFF, value, value, 0xFF);
+    } else {
+        // Sky
+        setPixel(BUFFER, WIDTH, i, j, 0xFF, 0x00, 0xA0, 0xFF);
+    }
+}
+
+export("render_pixel_stub")
+void *
+render_pixel_stub(void *k) {
+    int i = ((int)(intptr_t)k)/WIDTH;
+    int j = ((int)(intptr_t)k)%WIDTH;
+    render_pixel(i, j);
+    return NULL;
+}
+
+export("render_row_stub")
+void *
+render_row_stub(void *i) {
+    for (int j = 0; j < WIDTH; j++){
+        if (j == WIDTH/2) {
+            fiber_yield(NULL);
+        }
+        render_pixel((int)(intptr_t)i, j);
+    }
+    return NULL;
+}
+
+fiber_t fiber_ids[HEIGHT];
+
 export("render")
 int
 render(int time) {
     sphereCenter.z = 0 + time;
     for (int i = 0; i < HEIGHT; i++){
-        for (int j = 0; j < WIDTH; j++){
-            struct pt ray = {
-                // Note: distorted, not normalized.
-                ((float)j/WIDTH - 0.5) * 0.2,
-                -((float)i/HEIGHT - 0.5) * 0.2,
-                1,
-            };
+        fiber_yield(NULL);
 
-            struct pt hitPt;
-
-            if (sphereHit(&viewpoint, &ray, &sphereCenter, sphereRadius, &hitPt)) {
-                struct pt sphereVector;
-                struct pt lightVector;
-                diff(&hitPt, &sphereCenter, &sphereVector);
-                normalize(&sphereVector);
-                diff(&lightSource, &sphereCenter, &lightVector);
-                normalize(&lightVector);
-                float incidence = dot(&sphereVector, &lightVector);
-                incidence = max(incidence, 0);
-                setPixel(BUFFER, WIDTH, i, j, 0xFF, 0xFF * incidence, 0x00, 0x7F * incidence + 0x80);
-                continue;
-            }
-            if (planeHit(&viewpoint, &ray, &planenormal, &hitPt)) {
-                char value;
-                if (((int)(floor(hitPt.x / 1.0)) + (int)(floor(hitPt.z / 1.0))) % 2) {
-                    value = 0xFF;
-                } else {
-                    value = 0x00;
-                }
-                setPixel(BUFFER, WIDTH, i, j, 0xFF, value, value, 0xFF);
-            } else {
-                setPixel(BUFFER, WIDTH, i, j, 0xFF, 0x00, 0xA0, 0xFF);
-            }
+        if (i < 91) {  // Some problem: Too many fibers will trigger a FIBER_ERROR state or out of memeory.
+            render_row_stub((void *)(intptr_t)i);
+        } else {
+            fiber_ids[i] = scheduler_spawn((fiber_entry_point_t)render_row_stub, (void *)(intptr_t)(i));
         }
     }
     return 747;
 }
 
+export("render_stub")
 void *
 render_stub(void *arg) {
     int time = (int)(intptr_t)arg;
@@ -250,8 +292,12 @@ int
 render_main(int time) {
     int result = -1;
     time = time+0;
-    scheduler_init();
+
+    // // Non-fibered version:
     // result = render(time);
+
+    // Fibered version:
+    scheduler_init();
     scheduler_spawn((fiber_entry_point_t)render_stub, (void *)(intptr_t)time);
     scheduler_loop();
     scheduler_finalize();

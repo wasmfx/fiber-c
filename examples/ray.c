@@ -13,6 +13,11 @@
 static char BUFFER[4 * HEIGHT * WIDTH] = {0};
 
 #define export(NAME) __attribute__((export_name(NAME)))
+#define import(NAME) __attribute__((import_module("js_host"),import_name(NAME)))
+
+extern
+import("push_frame")
+void push_frame (void*);
 
 
 #define MAX_TASKS 1800
@@ -300,6 +305,7 @@ render_main(int time) {
     scheduler_init();
     scheduler_spawn((fiber_entry_point_t)render_stub, (void *)(intptr_t)time);
     scheduler_loop();
+    push_frame(BUFFER);
     scheduler_finalize();
 
     return result;

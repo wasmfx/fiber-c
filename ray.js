@@ -93,6 +93,11 @@ class Wasi {
 	}
 }
 
+var globalInstance = null;
+var globalCtx = null;
+const width = 600;
+const height = 600;
+
 async function run() {
 	// load the wasm file
 	// const response = await fetch("out/ray_asyncify.wasm");
@@ -106,15 +111,27 @@ async function run() {
 
 	console.log(binary);
 
-	WebAssembly.instantiate(binary, { "wasi_snapshot_preview1": wasi }).then(({ instance }) => {
+	WebAssembly.instantiate(binary, { "wasi_snapshot_preview1": wasi,
+		"js_host": {
+			"console_log": (ptr) => {
+				console.log("console_log called with ptr: " + ptr);
+			},
+			"push_frame": (ptr) => {
+				// UGH: How do I get instance, ctx piped in here?
+				const byteArray = new Uint8ClampedArray( globalInstance.exports.memory.buffer, ptr, width * height * 4 );
+				const img = new ImageData( byteArray, width, height );
+				globalCtx.putImageData( img, 0, 0 );
+			}
+		}
+	 }).then(({ instance }) => {
 		wasi.instance = instance;
 
-		const width = 600;
-		const height = 600;
+		globalInstance = instance;
 
 		const bitmapPtr = instance.exports.getBuffer();
 		const canvas = document.getElementById('c');
 		const ctx = canvas.getContext('2d');
+		globalCtx = ctx;
 
 		var timeBase = performance.now();
 		var numFrames = 0;
@@ -124,9 +141,9 @@ async function run() {
 
 		function doFrame() {
 			instance.exports.render_main(time);
-			const byteArray = new Uint8ClampedArray( instance.exports.memory.buffer, bitmapPtr, width * height * 4 );
-			const img = new ImageData( byteArray, width, height );
-			ctx.putImageData( img, 0, 0 );
+			// const byteArray = new Uint8ClampedArray( instance.exports.memory.buffer, bitmapPtr, width * height * 4 );
+			// const img = new ImageData( byteArray, width, height );
+			// ctx.putImageData( img, 0, 0 );
 			numFrames++;
 			const newTimeBase = performance.now();
 			if (newTimeBase - timeBase > 1000.0) {

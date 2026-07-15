@@ -4,7 +4,7 @@
 class Wasi {
 	#argEncodedStrings;
 	#instance;
-    
+
 	constructor({ args }) {
 		// encode args
 		this.#argEncodedStrings = [];
@@ -36,7 +36,7 @@ class Wasi {
 		this.args_get= this.args_get.bind(this);
 		this.args_sizes_get = this.args_sizes_get.bind(this);
 	}
-	
+
 	fd_write(fd, iovsPtr, iovsLength, bytesWrittenPtr) {
 		const mem = new Uint8Array(this.#instance.exports.memory.buffer);
 		const iovs = new Uint32Array(this.#instance.exports.memory.buffer, iovsPtr, iovsLength * 2);
@@ -61,13 +61,13 @@ class Wasi {
 	proc_exit(code) {
 		return 0;
 	}
-    fd_close(fd) {  
+    fd_close(fd) {
         return 0;
     }
     fd_fdstat_get(fd,buf_ptr) {
         return 0;
     }
-    fd_seek(fd, offset, whence, newoffset) { 
+    fd_seek(fd, offset, whence, newoffset) {
         return 0;
     }
 	args_sizes_get(argCountPtr, argBufferSizePtr) {

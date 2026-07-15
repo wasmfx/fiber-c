@@ -4,7 +4,7 @@
 export class Wasi {
 	#argEncodedStrings;
 	#instance;
-    
+
 	constructor({ args }) {
 		// encode args
 		this.#argEncodedStrings = [];
@@ -36,7 +36,7 @@ export class Wasi {
 		this.args_get= this.args_get.bind(this);
 		this.args_sizes_get = this.args_sizes_get.bind(this);
 	}
-	
+
 	fd_write(fd, iovsPtr, iovsLength, bytesWrittenPtr) {
 		const mem = new Uint8Array(this.#instance.exports.memory.buffer);
 		const iovs = new Uint32Array(this.#instance.exports.memory.buffer, iovsPtr, iovsLength * 2);
@@ -49,7 +49,7 @@ export class Wasi {
 			for (let j = 0; j < length; j++) {
 				text += String.fromCharCode(mem[offset + j]);
 			}
-		total += length;
+			total += length;
 		}
 
 		new DataView(this.#instance.exports.memory.buffer).setInt32(bytesWrittenPtr, total, true);
@@ -61,23 +61,25 @@ export class Wasi {
 	proc_exit(code) {
 		return 0;
 	}
-    fd_close(fd) {  
+    fd_close(fd) {
         return 0;
     }
     fd_fdstat_get(fd,buf_ptr) {
         return 0;
     }
-    fd_seek(fd, offset, whence, newoffset) { 
+    fd_seek(fd, offset, whence, newoffset) {
         return 0;
     }
 	args_sizes_get(argCountPtr, argBufferSizePtr) {
 		const argByteLength = this.#argEncodedStrings.reduce((sum, val) => sum + val.byteLength, 0);
+
 		const countPointerBuffer = new Uint32Array(this.#instance.exports.memory.buffer, argCountPtr, 1);
-		const sizePointerBuffer = new Uint32Array(this.#instance.exports.memory.buffer, argBufferSizePtr, 1);
 		countPointerBuffer[0] = this.#argEncodedStrings.length;
+		const sizePointerBuffer = new Uint32Array(this.#instance.exports.memory.buffer, argBufferSizePtr, 1);
 		sizePointerBuffer[0] = argByteLength;
+
 		return 0;
-}
+	}
 	args_get(argsPtr, argBufferPtr) {
 		const argsByteLength = this.#argEncodedStrings.reduce((sum, val) => sum + val.byteLength, 0);
 		const argsPointerBuffer = new Uint32Array(this.#instance.exports.memory.buffer, argsPtr, this.#argEncodedStrings.length);
@@ -98,10 +100,9 @@ const binary = readbuffer(arguments[0]);
 // argument to pass to the wasm module, if any
 const arg = arguments.length > 1 ? arguments[1] : "";
 
-// import `Wasi` to use it
 const wasi = new Wasi({
 	// "1" must be passed as first arg for `itersum`, `treesum`, and `sieve`
-    args: ["1",arg]
+    args: ["1", arg]
 });
 
 WebAssembly.instantiate(binary, { "wasi_snapshot_preview1": wasi }).then(({ instance }) => {

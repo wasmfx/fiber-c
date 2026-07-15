@@ -241,12 +241,7 @@ render_pixel(int i, int j) {
         return;
     }
     if (planeHit(&viewpoint, &ray, &planenormal, &hitPt)) {
-        char value;
-        if (plane_texture(hitPt.x, hitPt.z)) {
-            value = 0xFF;
-        } else {
-            value = 0x00;
-        }
+        char value = plane_texture(hitPt.x, hitPt.z) ? 0xFF : 0x00;
         setPixel(BUFFER, WIDTH, i, j, 0xFF, value, value, 0xFF);
     } else {
         // Sky

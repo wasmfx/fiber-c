@@ -208,6 +208,15 @@ getBuffer() {
     return BUFFER;
 }
 
+bool
+plane_texture(float x, float z) {
+    if (((int)(floor(x / 1.0)) + (int)(floor(z / 1.0))) % 2) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void
 render_pixel(int i, int j) {
     struct pt ray = {
@@ -233,7 +242,7 @@ render_pixel(int i, int j) {
     }
     if (planeHit(&viewpoint, &ray, &planenormal, &hitPt)) {
         char value;
-        if (((int)(floor(hitPt.x / 1.0)) + (int)(floor(hitPt.z / 1.0))) % 2) {
+        if (plane_texture(hitPt.x, hitPt.z)) {
             value = 0xFF;
         } else {
             value = 0x00;

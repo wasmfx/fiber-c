@@ -135,6 +135,7 @@ async function run() {
 
 		var timeBase = performance.now();
 		var numFrames = 0;
+		var frameRate = 1000000;
 		var minFrameRate = 1000000;
 		var maxFrameRate = 0;
 		var time = 0;
@@ -144,12 +145,13 @@ async function run() {
 			// const byteArray = new Uint8ClampedArray( instance.exports.memory.buffer, bitmapPtr, width * height * 4 );
 			// const img = new ImageData( byteArray, width, height );
 			// ctx.putImageData( img, 0, 0 );
+			ctx.font = "16px Arial";
+			ctx.fillText("FPS: " + Math.round(100*frameRate)/100, 0, 20);
+			ctx.fillText("FPS range: " + Math.round(100*minFrameRate)/100 + " - " + Math.round(100*maxFrameRate)/100, 0, 40);
 			numFrames++;
 			const newTimeBase = performance.now();
 			if (newTimeBase - timeBase > 1000.0) {
-				const frameRate = numFrames/(newTimeBase - timeBase) * 1000.0;
-				console.log("FPS: " + frameRate);
-				console.log("FPS range: " + minFrameRate + " - " + maxFrameRate);
+				frameRate = numFrames/(newTimeBase - timeBase) * 1000.0;
 				if (frameRate < minFrameRate) {
 					minFrameRate = frameRate;
 				}

@@ -19,7 +19,7 @@ ENGINE_ROOT_DIR = os.getenv("ENGINE_ROOT_DIR", "/opt/wasmfx")
 
 # ---- Script generation ----
 
-SCRIPT_TEMPLATE = f"#!/bin/bash\nsetarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}"
+SCRIPT_TEMPLATE = f"#!/bin/bash\nsetarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}} {{arg}}"
 
 def make_script(filename: Path, content: str):
     filename.write_text(content)
@@ -35,19 +35,20 @@ def wasmtime_stack_pool_size_upd(benchmark: str):
         # Else delete the "total-stacks" option
         return f"{config['WASMTIME_OPTIONS']}".replace(",total-stacks=<STACK_POOL_SIZE>", "")
 
-def generate_scripts(benchmark: str, engines: list[str]):
-    # Set arguments for benchmarks that need them
-    if benchmark in config["BENCHMARK_ARGS"].keys():
-        arg = f" {config['BENCHMARK_ARGS'][benchmark]}"
-    else:
-        arg = ""
-
-    Path("run-scripts").mkdir(exist_ok=True)
+def generate_scripts(benchmark: str, engines: list[str], out_dir: str, arg: int):
 
     # Generate scripts that run each benchmark using SCRIPT_TEMPLATE and data from config.yml
     for engine in engines:
         for mode in ["asyncify", "wasmfx"]:
-            script_name = f"{benchmark}_{engine}_{mode}.sh"
+            # Set arguments for benchmarks that need them
+            if arg is None:
+                if benchmark in config["BENCHMARK_ARGS"].keys():
+                    arg = f" {config['BENCHMARK_ARGS'][benchmark]}"
+                else:
+                    arg = ""
+                script_name = f"{benchmark}_{engine}_{mode}.sh"
+            else: 
+                script_name = f"{benchmark}_{arg}_{engine}_{mode}.sh"
             # configure engine-specific options and script suffixes
             match engine:
                 case "wasmtime":
@@ -71,16 +72,28 @@ def generate_scripts(benchmark: str, engines: list[str]):
                 suffix=suffix,
                 arg=arg,
             )
-            make_script(Path("run-scripts/" + script_name), content)
+            make_script(Path(out_dir + "/" + script_name), content)
 
 def main():
+    # Make output directory
+    Path("run-scripts").mkdir(exist_ok=True)
+
+    # Generate scripts for running entire benchmark suite with fixed arguments
     for benchmark in config["BENCHMARKS_FIBER_C"]:
-        generate_scripts(benchmark, config["ENGINES"])
+        generate_scripts(benchmark, config["ENGINES"], "run-scripts", None)
         print("Generated scripts for benchmark:", benchmark)
     for benchmark in config["BENCHMARKS_FIBER_C_SWITCH"]:
         benchmark_name = benchmark + "_switch"
-        generate_scripts(benchmark_name, config["ENGINES"])
+        generate_scripts(benchmark_name, config["ENGINES"], "run-scripts", None)
         print("Generated scripts for benchmark:", benchmark_name)
+
+    # Make output directory for treesum-with-different-args scripts
+    Path("run-scripts/treesum").mkdir(exist_ok=True)
+
+    # Generate scripts for running treesum with different arguments
+    for i in config["TREESUM_VARIED_ARGS"]:
+        generate_scripts("treesum", config["ENGINES"], "run-scripts/treesum", i)
+    print("Generated scripts for running treesum with arguments in range:", list(config["TREESUM_VARIED_ARGS"]))
 
 if __name__ == "__main__":
     main()

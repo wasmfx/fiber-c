@@ -158,6 +158,8 @@ void* fiber_yield(void *arg) {
 }
 
 void fiber_init(void) {
+  free_list_size = 0;
+  cont_table_unused_size = initial_table_capacity - 1;
   free_list = malloc(initial_table_capacity * sizeof(uint32_t));
   assert(free_list != NULL && "fiber_init: malloc failed");
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK

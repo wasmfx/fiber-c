@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
@@ -18,7 +18,6 @@ import json
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
-import math
 
 # deal with inputs
 parser = argparse.ArgumentParser(description=__doc__)

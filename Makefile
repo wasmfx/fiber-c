@@ -83,3 +83,8 @@ clean:
 	rm -f *.sh
 	rm -f *.cwasm
 	rm -rf run-scripts out
+
+examples/treesum_heavy_1 examples/treesum_heavy_2 examples/treesum_heavy_3 examples/treesum_heavy_4:
+	(cd examples/; python3 treesum_heavy_generator.py $(TREESUM_HEAVY_WIDTH))
+
+out/treesum_heavy_asyncify.wasm out/treesum_heavy_asyncify.wasm: examples/treesum_heavy_1 examples/treesum_heavy_2 examples/treesum_heavy_3 examples/treesum_heavy_4

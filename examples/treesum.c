@@ -54,7 +54,11 @@ int32_t walk_tree(node_t *node) {
   } else {
     int sum = walk_tree(node->left);
     sum += walk_tree(node->right);
-    return sum;
+    if (sum % 2 == 0) {
+      return sum;
+    } else {
+      return sum + node->height;
+    }
   }
 }
 

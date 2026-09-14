@@ -84,7 +84,7 @@ clean:
 	rm -f *.cwasm
 	rm -rf run-scripts out
 
-examples/treesum_heavy_1 examples/treesum_heavy_2 examples/treesum_heavy_3 examples/treesum_heavy_4:
+examples/treesum_heavy_args.h examples/treesum_heavy_leftcalls.h examples/treesum_heavy_rightcalls.h examples/treesum_heavy_startcalls.h:
 	(cd examples/; python3 treesum_heavy_generator.py $(TREESUM_HEAVY_WIDTH))
 
-out/treesum_heavy_asyncify.wasm out/treesum_heavy_asyncify.wasm: examples/treesum_heavy_1 examples/treesum_heavy_2 examples/treesum_heavy_3 examples/treesum_heavy_4
+out/treesum_heavy_asyncify.wasm out/treesum_heavy_asyncify.wasm: examples/treesum_heavy_args.h examples/treesum_heavy_leftcalls.h examples/treesum_heavy_rightcalls.h examples/treesum_heavy_startcalls.h

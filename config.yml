@@ -23,7 +23,7 @@ BENCHMARKS_FIBER_C : [
     "c10m",
     "pi",
     "skynet",
-    "scheduler",
+    "roundrobin",
   ]
 
 # List of switch benchmarks
@@ -31,7 +31,7 @@ BENCHMARKS_FIBER_C_SWITCH : [
     "itersum",
     "treesum",
     "pi",
-    "scheduler",
+    "roundrobin",
 ]
 
 # Arguments for benchmarks that require arguments

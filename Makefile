@@ -9,8 +9,8 @@ else
 endif
 
 .PHONY: all
-BENCHMARKS= hello c10m hello itersum pi sieve skynet state treesum treesumlinear scheduler
-SWITCH_BENCHMARKS= hello itersum treesum pi scheduler
+BENCHMARKS= hello c10m hello itersum pi sieve skynet state treesum treesumlinear roundrobin
+SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:

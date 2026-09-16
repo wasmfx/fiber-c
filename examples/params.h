@@ -9,7 +9,7 @@
 #define BATCH_SIZE    20000U
 #define YIELDS        50U
 
-// Parameters for scheduler and scheduler_switch
+// Parameters for roundrobin and roundrobin_switch
 #define NUM_WORKERS   10
 #define SWITCHES      10000000
 

@@ -1,7 +1,7 @@
 (type $ft1 (func (param) (result)))
 (type $ct1 (cont $ft1))
 
-(table $cont-table 40001 (ref null $ct1))
+(table $cont-table 10000 (ref null $ct1))
 
 (func $null-func
   )
@@ -11,7 +11,7 @@
 (func $cont-new-loop
     (local $i i32)
     (local $k (ref $ct1))
-    (local.set $i (i32.const 10000))
+    (local.set $i (i32.const 9999))
     (loop $loop
         (cont.new $ct1 (ref.func $null-func))
         (local.set $k)
@@ -20,7 +20,7 @@
         (local.tee $i (i32.sub (local.get $i) (i32.const 1)))
         (br_if $loop)
     )
-    (local.set $i (i32.const 10000))
+    (local.set $i (i32.const 9999))
     (loop $loop
         (table.get $cont-table (local.get $i))
         (resume $ct1)

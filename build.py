@@ -25,6 +25,16 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
+# Appends stack pool size to "total-stacks" in wasmtime benchmarking script for benchmarks that
+# require it, else delete the "total-stacks" option from the script.
+def wasmfxtime_stack_pool_size_upd(benchmark: str):
+    if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
+        # Replace the <STACK_POOL_SIZE> placeholder with the value from the config
+        return f"{config['WASMFXTIME_OPTIONS']}".replace("<STACK_POOL_SIZE>", str(config["WASMTIME_STACK_POOL_SIZES"][benchmark]))
+    else:
+        # Else delete the "total-stacks" option
+        return f"{config['WASMFXTIME_OPTIONS']}".replace(",total-stacks=<STACK_POOL_SIZE>", "")
+
 def generate_scripts(benchmark: str, engines: list[str]):
     # Set arguments for benchmarks that need them
     if benchmark in config["BENCHMARK_ARGS"].keys():
@@ -47,7 +57,7 @@ def generate_scripts(benchmark: str, engines: list[str]):
                 case "wasmfxtime":
                     engine_path=config["WASMFXTIME_PATH"]
                     suffix="wasmfxtime.cwasm"
-                    engine_options=config["WASMTIME_OPTIONS"]
+                    engine_options=wasmfxtime_stack_pool_size_upd(benchmark)
                 case "wizard":
                     engine_path=config["WIZARD_PATH"]
                     engine_options=config["WIZARD_OPTIONS"]

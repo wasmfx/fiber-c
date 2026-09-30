@@ -17,10 +17,14 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
-%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
-	@echo Made $@ #from $^
+%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
+	out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm \
+	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
+		@echo Made $@ #from $^
 
-$(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm out/%_switch_asyncify.cwasm out/%_switch_wasmfx.cwasm out/%_switch_asyncify.stripped.wasm out/%_switch_wasmfx.stripped.wasm
+$(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm \
+ 	out/%_switch_asyncify.cwasm out/%_switch_wasmfx.cwasm \
+ 	out/%_switch_asyncify.stripped.wasm out/%_switch_wasmfx.stripped.wasm
 
 out/%_asyncify.wasm: examples/%.c inc/fiber.h src/asyncify/asyncify_impl.c | out
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)

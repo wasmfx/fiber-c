@@ -69,6 +69,7 @@ def main(arg):
             "wasicc_ver" : wasicc_ver,
             "wasicc_flags" : wasicc_flags,
             "wasmfxtime_ver" : wasmfxtime_ver,
+            "wasmtime_ver" : wasmtime_ver,
             # The commented out lines dump *all* info, which we might want at some point!
             #"wasm_opt_flags" : config["wasm_opt_flags"],
             #"asyncify_flags" : config["asyncify_flags"],
@@ -76,7 +77,6 @@ def main(arg):
             #"wasm_merge_flags" : config["wasm_merge_flags"],
             #"wasicc_flags" : config["wasi_flags"],
             #"wasm_interp_ver" : wasm_interp_ver,
-            #"wasmtime_ver" : wasmtime_ver,
         }, f)
 
 if __name__ == "__main__":

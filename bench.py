@@ -22,7 +22,7 @@ all_engines = config["ENGINES"]
 
 
 def disabled(engine, benchmark, style):
-    if engine == "wasmtime" and style == "switch":
+    if engine == "wasmfxtime" and style == "switch":
         return True
     return False
 
@@ -111,7 +111,7 @@ def main():
     parser.add_argument(
         "--engines",
         nargs="*",
-        help="List of engines to run (d8, wasmtime, wizard)",
+        help="List of engines to run (d8, wasmtime, wasmfxtime, wizard)",
         default=all_engines,
     )
     parser.add_argument(
@@ -139,10 +139,10 @@ def main():
             raise ValueError(
                 f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}"
             )
-        # Can't run switch experiments on wasmtime right now so we are banning that option
-        if not set(args.engines).issubset(set(["d8", "wizard"])):
+        # Can't run switch experiments on wasmfxtime so we are banning that option
+        if not set(args.engines).issubset(set(["d8", "wizard", "wasmtime", "wasmfxtime"])):
             raise ValueError(
-                f"Error: invalid engine name(s). Valid options are: d8, wizard (switch experiments are currently broken on wasmtime)"
+                f"Error: invalid engine name(s). Valid options are: d8, wizard, wasmtime, wasmfxtime (switch experiments are broken on wasmfxtime)"
             )
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):

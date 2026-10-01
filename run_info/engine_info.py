@@ -20,6 +20,9 @@ ENGINE_ROOT_DIR = os.getenv("ENGINE_ROOT_DIR", "/opt/wasmfx")
 wasmtime_ver = subprocess.check_output([ENGINE_ROOT_DIR + config["WASMTIME_PATH"], "--version"])
 wasmtime_ver = wasmtime_ver.decode().split('\n', 1)[0]
 
+wasmfxtime_ver = subprocess.check_output([ENGINE_ROOT_DIR + config["WASMFXTIME_PATH"], "--version"])
+wasmfxtime_ver = wasmfxtime_ver.decode().split('\n', 1)[0]
+
 wizard_ver = subprocess.check_output([ENGINE_ROOT_DIR + config["WIZARD_PATH"], "--version"])
 wizard_ver = wizard_ver.decode().split('\n', 1)[0]
 
@@ -35,6 +38,7 @@ def main(arg):
         json.dump({
             "wasmtime": wasmtime_ver,
             #"wasmtime_flags": config["WASMTIME_OPTIONS"],
+            "wasmfxtime": wasmfxtime_ver,
             "wizard": wizard_ver,
             #"wizard_flags": config["WIZARD_OPTIONS"],
             "d8": v8_ver,

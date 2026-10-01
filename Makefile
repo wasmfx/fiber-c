@@ -17,10 +17,14 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
-%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
-	@echo Made $@ #from $^
+%: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
+	out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm \
+	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
+		@echo Made $@ #from $^
 
-$(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm out/%_switch_asyncify.stripped.wasm out/%_switch_wasmfx.stripped.wasm
+$(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm \
+ 	out/%_switch_asyncify.cwasm out/%_switch_wasmfx.cwasm \
+ 	out/%_switch_asyncify.stripped.wasm out/%_switch_wasmfx.stripped.wasm
 
 out/%_asyncify.wasm: examples/%.c inc/fiber.h src/asyncify/asyncify_impl.c | out
 	$(WASICC) -DSTACK_POOL_SIZE=$(STACK_POOL_SIZE) -DASYNCIFY_DEFAULT_STACK_SIZE=$(ASYNCIFY_DEFAULT_STACK_SIZE) src/asyncify/asyncify_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
@@ -60,6 +64,12 @@ out/%_asyncify.stripped.wasm: out/%_asyncify.wasm
 
 out/%.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
+
+out/%_switch.cwasm: out/%.wasm
+	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
+
+out/%.wasmfxtime.cwasm: out/%.wasm
+	$(WASMFXTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports.wat

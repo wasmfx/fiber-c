@@ -17,14 +17,15 @@
   ;;(tag $switch_return)
 
   ;; Table to hold the continuations of the tasks, let's just have
-  ;; 3 tasks for now.
+  ;; 10 tasks for now.
   (table $task_queue 10 (ref null $ct))
 
-  ;; Worker that increments a counter and yields
+  ;; $worker loops $max times, yielding to the next task each time. No data
+  ;; is passed to the next task as it is.
   (func $worker (param i32)
     (local $max i32)
     (local $counter i32)
-    
+
     (local.set $max (local.get 0))
 
     (loop $work
@@ -40,7 +41,9 @@
   )
   (elem declare func $worker)
 
-  ;; Wrapper for each fiber
+  ;; Entry point for each fiber: Takes an arg ($max) and, as per the switch
+  ;; protocol, takes a continuation reference ($k) which needs to be stored
+  ;; in the task table or else it would get lost. Calls $worker in any case.
   (func $worker_initial_entry (type $ft)
     (local $max i32)
     (local $k (ref null $ct))
@@ -56,9 +59,10 @@
   )
   (elem declare func $worker_initial_entry)
 
-  ;; Determines next task to switch to directly.
+  ;; $yield_to_next: This is really the scheduler. It maintains the global
+  ;; scheduler state and yields a value to the next task in the ring.
   (func $yield_to_next
-    (local $arg i32)
+    (local $arg i32) ;; unused local; I think this was intended to be a param.
     (local $received_task (ref null $ct))
 
     ;; Save the current task index before switching
@@ -70,26 +74,22 @@
         (then (global.set $current_task_id (i32.add (global.get $current_task_id) (i32.const 1))))
         (else (global.set $current_task_id (i32.const 0))))
 
-    ;;(block $done
-      ;; (br_if $done (ref.is_null (table.get $task_queue (global.get $current_task_id))))
-      ;; Switch to the $current_task_id-th entry of the table.
-      (switch $ct $yield
-        ;;(local.get $arg) 
-        (i32.const 10000000)
-        (table.get $task_queue (global.get $current_task_id)))
+    ;; Switch to the $current_task_id-th entry of the table.
+    (switch $ct $yield
+      ;;(local.get $arg)
+      (i32.const 10000000)  ;; Passing this data to the next task, but it's ignored.
+      (table.get $task_queue (global.get $current_task_id)))
 
-      ;; If we get here, some other continuation switched directly to us.
-      ;; Put it in the table at the right index
-      (local.set $received_task)
-      (table.set $task_queue (global.get $prev_task_id) (local.get $received_task))
-      (drop)
-      ;;)
-    )
+    ;; Per the switch protocol, the continuation of the previous task is returned on stack,
+    ;; so we need to make sure it gets into the table.
+    (local.set $received_task)
+    (table.set $task_queue (global.get $prev_task_id) (local.get $received_task))
+    (drop)  ;; Drop the data value given to the switch.
+  )
 
   ;; Initialise the table with $num_worker workers
   (func $spawn_workers (param $num_workers i32)
-
-    ;; Temporary variable to hold the continuation reference before putting it in the table
+    ;; Temporary variable to hold the continuation reference before putting it in the table.
     (local $cont (ref null $ct))
     ;; Counter for loop
     (local $i i32)
@@ -113,8 +113,8 @@
   (func $entry (param $num_workers i32)
     ;; Populate the task queue
     (call $spawn_workers (local.get $num_workers))
-    ;; Resume the 0th worker
 
+    ;; Resume the 0th worker
     (resume $ct (on $yield switch)
           (i32.const 10000000) ;; Argument passed to the worker, the max count for the loop
           (ref.null $ct)

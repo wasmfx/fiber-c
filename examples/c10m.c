@@ -58,6 +58,7 @@ noinline void* async_worker(void *arg) {
 noinline uint32_t async_wl(void) {
   maybe_printf0("async_test1M set up...\n");
   fiber_t *rs = (fiber_t*)malloc(sizeof(fiber_t) * ACTIVE_CONN);
+  assert(rs);
   for (size_t i = 0; i < ACTIVE_CONN; i++) {
     rs[i] = fiber_alloc(async_worker);
   }

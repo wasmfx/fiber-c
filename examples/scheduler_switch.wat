@@ -17,8 +17,8 @@
   ;;(tag $switch_return)
 
   ;; Table to hold the continuations of the tasks, let's just have
-  ;; 10 tasks for now.
-  (table $task_queue 10 (ref null $ct))
+  ;; 10 tasks for now. (Wizard crashes if I set the table size to 10!)
+  (table $task_queue 11 (ref null $ct))
 
   ;; $worker loops $max times, yielding to the next task each time. No data
   ;; is passed to the next task as it is.
@@ -104,7 +104,7 @@
       (local.tee $i (i32.add (local.get $i) (i32.const 1)))
       ;; Continue loop if `i < $num_workers`
       (local.get $num_workers)
-      (i32.le_u)
+      (i32.lt_u)
       (br_if $init_table)
     )
   )
@@ -131,8 +131,8 @@
 
   (func $_start
     (block $exit
-      ;; Call entry point with 9 (which spawns 10 workers)
-      (call $entry (i32.const 9))
+      ;; Do the work with 10 workers
+      (call $entry (i32.const 10))
       ;; TODO: Validate result
       (global.get $result)
       (i32.const 0)

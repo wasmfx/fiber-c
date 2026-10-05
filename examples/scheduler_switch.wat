@@ -1,5 +1,6 @@
 (module $scheduler_switch
   (rec
+    ;; Function type of all tasks
     (type $ft (func (param i32 (ref null $ct))))
     ;; Continuation type of all tasks
     (type $ct (cont $ft))

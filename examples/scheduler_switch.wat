@@ -32,6 +32,7 @@
     (loop $work
       ;; Do some work (just incrementing a counter here)
       (local.tee $counter (i32.add (local.get $counter) (i32.const 1)))
+      (global.set $result (i32.add (global.get $result) (i32.const 1))) ;; some simple validation.
       ;; Yield to the next task
       (call $yield_to_next)
       ;; Continue loop if `counter < max`
@@ -90,17 +91,13 @@
 
   ;; Initialise the table with $num_worker workers
   (func $spawn_workers (param $num_workers i32)
-    ;; Temporary variable to hold the continuation reference before putting it in the table.
-    (local $cont (ref null $ct))
     ;; Counter for loop
     (local $i i32)
 
     (loop $init_table
-      ;; Make a new continuation for the worker function
-      (cont.new $ct (ref.func $worker_initial_entry))
-      ;; Put it in the i-th index of the table
-      (local.set $cont)
-      (table.set $task_queue (local.get $i) (local.get $cont))
+      ;; Make a new continuation for the worker function and put it in the i-th
+      ;; index of the table
+      (table.set $task_queue (local.get $i) (cont.new $ct (ref.func $worker_initial_entry)))
       ;; increment i
       (local.tee $i (i32.add (local.get $i) (i32.const 1)))
       ;; Continue loop if `i < $num_workers`
@@ -130,18 +127,17 @@
     ;;   )
   )
 
-  (func $_start
+  (func $_start (export "_start")
     (block $exit
       ;; Do the work with 10 workers
       (call $entry (i32.const 10))
-      ;; TODO: Validate result
+
+      ;; Validate result
       (global.get $result)
-      (i32.const 0)
+      (i32.const 100000000) ;; Checking that the counted number of switches is as expected.
       (i32.eq)
       (br_if $exit)
       (unreachable)
     )
   )
-
-  (export "_start" (func $_start))
 )

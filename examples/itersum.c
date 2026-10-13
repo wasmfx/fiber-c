@@ -2,8 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include <fiber.h>
 
+#define PRINT_RESULTS 0
 
 // Yields the natural numbers 0, 1, ... up to "arg"
 void* range(void *arg) {
@@ -41,8 +43,14 @@ int main(int argc, char** argv) {
 
   int32_t result = run(i);
 
+  assert(result == (i * (i - 1)) / 2);
+
+  #if PRINT_RESULTS
   printf("%d\n", result);
+  #endif
 
   fiber_finalize();
   return 0;
 }
+
+#undef PRINT_RESULTS

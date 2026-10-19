@@ -1,6 +1,6 @@
 (module
   ;; Fiber type: takes no resume args, yields only an i32
-  (type $GenFiberF (func (param i32) (result i32)))
+  (type $GenFiberF (func (param) (result i32)))
   (type $GenFiber (sub (fiber 0)))
 
   ;; The generator function
@@ -16,7 +16,6 @@
       local.get $state
       local.get $self
       fiber.suspend $GenFiber
-      drop
 
       local.get $state
       i32.const 100000000  ;; total iterations
@@ -40,7 +39,6 @@
       block $suspend_handler (result i32)
         ;; Push fiber ref and resume
         local.get $f
-        i32.const 0
         fiber.resume $GenFiber $suspend_handler
 
         ;; If we reach here, the generator returned (finished)

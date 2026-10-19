@@ -19,7 +19,7 @@
       drop
 
       local.get $state
-      i32.const 100000000
+      i32.const 100000000  ;; total iterations
       i32.lt_u
       br_if $l
     end

@@ -44,7 +44,7 @@ fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
 	$(WASM_INTERP) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
 
 fiber_reified_wasmfx_imports.wasm: src/wasmfx/imports_reified.wat
-	$(REIFIED_WASM_AS) --enable-gc --enable-reified-fibers --enable-reference-types src/wasmfx/imports_reified.wat -o fiber_reified_wasmfx_imports.wasm
+	$(WASM_AS) --enable-gc --enable-reified-fibers --enable-reference-types src/wasmfx/imports_reified.wat -o fiber_reified_wasmfx_imports.wasm
 
 out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
@@ -57,8 +57,8 @@ out/%_wasmfx.wasm: out/%_wasmfx.unopt.wasm
 
 out/%_reified.wasm: examples/%.c inc/fiber.h src/wasmfx/imports_reified.wat src/wasmfx/wasmfx_reified_impl.c fiber_reified_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_reified_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
-	$(REIFIED_WASM_MERGE) $(WASM_MERGE_FLAGS) --enable-reified-fibers fiber_reified_wasmfx_imports.wasm "fiber_reified_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
-	$(REIFIED_WASM_OPT) --enable-reified-fibers $(WASM_OPT_FLAGS) $@ -o $@
+	$(WASM_MERGE) $(WASM_MERGE_FLAGS) --enable-reified-fibers fiber_reified_wasmfx_imports.wasm "fiber_reified_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
+	$(WASM_OPT) --enable-reified-fibers $(WASM_OPT_FLAGS) $@ -o $@
 	chmod +x $@
 
 out/%_switch_wasmfx.wasm: examples/%_switch.c inc/fiber_switch.h src/wasmfx/imports_switch.wat src/wasmfx/wasmfx_switch_impl.c fiber_switch_wasmfx_imports.wasm | out

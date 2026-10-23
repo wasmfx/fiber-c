@@ -19,7 +19,8 @@ all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
 	out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm \
-	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
+	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm \
+	out/%_reified.wasm
 		@echo Made $@ #from $^
 
 $(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm \
@@ -42,6 +43,9 @@ fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
 	$(WASM_INTERP) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
 
+fiber_reified_wasmfx_imports.wasm: src/wasmfx/imports_reified.wat
+	$(REIFIED_WASM_AS) --enable-gc --enable-reified-fibers --enable-reference-types src/wasmfx/imports_reified.wat -o fiber_reified_wasmfx_imports.wasm
+
 out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
@@ -49,6 +53,12 @@ out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/was
 
 out/%_wasmfx.wasm: out/%_wasmfx.unopt.wasm
 	$(WASM_OPT) $(WASM_OPT_FLAGS) $< -o $@
+	chmod +x $@
+
+out/%_reified.wasm: examples/%.c inc/fiber.h src/wasmfx/imports_reified.wat src/wasmfx/wasmfx_reified_impl.c fiber_reified_wasmfx_imports.wasm | out
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_reified_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
+	$(REIFIED_WASM_MERGE) $(WASM_MERGE_FLAGS) --enable-reified-fibers fiber_reified_wasmfx_imports.wasm "fiber_reified_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
+	$(REIFIED_WASM_OPT) --enable-reified-fibers $(WASM_OPT_FLAGS) $@ -o $@
 	chmod +x $@
 
 out/%_switch_wasmfx.wasm: examples/%_switch.c inc/fiber_switch.h src/wasmfx/imports_switch.wat src/wasmfx/wasmfx_switch_impl.c fiber_switch_wasmfx_imports.wasm | out
@@ -77,6 +87,9 @@ src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 src/wasmfx/imports_switch.wat: src/wasmfx/imports_switch.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports_switch.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_switch.wat
 
+src/wasmfx/imports_reified.wat: src/wasmfx/imports_reified.wat.pp
+	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports_reified.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_reified.wat
+
 %.svg: %.dot
 	dot -Tsvg $< > $@
 
@@ -89,8 +102,7 @@ out:
 .PHONY: clean
 clean:
 	rm -f *.wasm
-	rm -f src/wasmfx/imports.wat src/wasmfx/imports_switch.wat
-	rm -f *.sh
+	rm -f src/wasmfx/imports.wat src/wasmfx/imports_switch.wat src/wasmfx/imports_reified.wat
 	rm -f *.cwasm
 	rm -rf run-scripts out
 

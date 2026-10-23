@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "fiber.h"
 
@@ -137,7 +136,6 @@ static void wasmfx_release_table_index(cont_table_index_t table_index) {
 
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
   cont_table_index_t table_index = wasmfx_acquire_table_index();
-  // printf("fiber_alloc: table_index = %lu\n", (unsigned long)table_index);
   wasmfx_indexed_cont_new(entry, table_index);
 
   return (fiber_t) table_index;
@@ -153,7 +151,6 @@ void fiber_free(fiber_t fiber) {
 
 void* fiber_resume(fiber_t fiber, void *arg, fiber_result_t *result) {
   cont_table_index_t table_index = (cont_table_index_t) fiber;
-  // printf("fiber_resume: table_index = %lu\n", (unsigned long)table_index);
   return wasmfx_indexed_resume(table_index, arg, result);
 }
 

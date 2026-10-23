@@ -81,3 +81,28 @@ starting the benchmarking process:
 ```
 ./build.py
 ```
+
+## Reified-fibers experiments
+To only run the reified-fibers experiments, do the following:
+
+1. Install the following dependencies:
+
+    1. [WASI-SDK 30.0](https://github.com/webassembly/wasi-sdk) and the [Wasm reference interpreter from the stack-switching proposal](https://github.com/WebAssembly/stack-switching/tree/main/interpreter)
+    2. Hyperfine for benchmarking, and Python3 with matplotlib and numpy for producing charts
+    3. [Binaryen from this PR](https://gitishub.com/WebAssembly/binaryen/pull/9015)
+    4. V8 with the reified-fibers patch
+
+    4 can be installed by cloning V8 from source normally, then running
+
+    ```
+    git fetch https://chromium.googlesource.com/v8/v8 refs/changes/13/8253813/35 && git checkout -b change-8253813 FETCH_HEAD
+    git pull && gclient sync
+
+    # Build executable
+    tools/dev/gm.py x64.release
+    ```
+2. Clone this repository and visit `make.config` to update `ROOT` and `BINARYEN` variables to point at the correct directories.
+
+3. Visit `reified_bench.sh` to update the `d8_path` variable too.
+
+4. Run the `reified_bench.sh` script. Data and charts will be saved to a directory called `reified_results`.

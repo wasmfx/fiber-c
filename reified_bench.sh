@@ -16,7 +16,9 @@ modes["wasmfx"]="--wasm-wasmfx"
 modes["reified"]="--experimental-wasm-reified-fibers"
 
 # compile binaries
-make "${!benchmarks[@]}"
+for benchmark in "${!benchmarks[@]}"; do
+    make out/${benchmark}_reified.wasm out/${benchmark}_wasmfx.wasm
+done
 
 # Generate driver scripts for each benchmark-mode combination
 driver_dir="run-scripts-reified"

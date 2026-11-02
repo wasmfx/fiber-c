@@ -25,15 +25,12 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
-# Appends stack pool size to "total-stacks" in wasmtime benchmarking script for benchmarks that
-# require it, else delete the "total-stacks" option from the script.
+# Add stack pool size options in wasmfxtime benchmarking script for a particular benchmark
 def wasmfxtime_stack_pool_size_upd(benchmark: str):
     if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
-        # Replace the <STACK_POOL_SIZE> placeholder with the value from the config
-        return f"{config['WASMFXTIME_OPTIONS']}".replace("<STACK_POOL_SIZE>", str(config["WASMTIME_STACK_POOL_SIZES"][benchmark]))
+        return f"{config['WASMFXTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10000")
     else:
-        # Else delete the "total-stacks" option
-        return f"{config['WASMFXTIME_OPTIONS']}".replace(",total-stacks=<STACK_POOL_SIZE>", "")
+        return f"{config['WASMFXTIME_OPTIONS']}"
 
 def generate_scripts(benchmark: str, engines: list[str]):
     # Set arguments for benchmarks that need them
@@ -67,14 +64,18 @@ def generate_scripts(benchmark: str, engines: list[str]):
                     engine_options=config["D8_OPTIONS"]
                     suffix="wasm"
             # stick this all into the script template
-            content = SCRIPT_TEMPLATE.format(
-                engine_path=ENGINE_ROOT_DIR + engine_path,
-                engine_options=engine_options,
-                benchmark=benchmark,
-                mode=mode,
-                suffix=suffix,
-                arg=arg,
-            )
+            # Don't run c10m on normal wasmtime or wizard for now
+            if benchmark == "c10m" and (engine == "wasmtime" or engine == "wizard"):
+                content = ""
+            else:
+                content = SCRIPT_TEMPLATE.format(
+                    engine_path=ENGINE_ROOT_DIR + engine_path,
+                    engine_options=engine_options,
+                    benchmark=benchmark,
+                    mode=mode,
+                    suffix=suffix,
+                    arg=arg,
+                )
             make_script(Path("run-scripts/" + script_name), content)
 
 def main():

@@ -140,9 +140,9 @@ def main():
                 f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}"
             )
         # Can't run switch experiments on wasmfxtime so we are banning that option
-        if not set(args.engines).issubset(set(["d8", "wizard", "wasmtime", "wasmfxtime"])):
+        if not set(args.engines).issubset(set(["d8", "wizard", "wasmtime"])):
             raise ValueError(
-                f"Error: invalid engine name(s). Valid options are: d8, wizard, wasmtime, wasmfxtime (switch experiments are broken on wasmfxtime)"
+                f"Error: invalid engine name(s). Valid options are: d8, wizard, wasmtime (switch experiments are broken on wasmfxtime)"
             )
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):

@@ -21,12 +21,9 @@ WIZARD_OPTIONS : "--ext:stack-switching --ext:gc --stack-size=65536 --mode=jit"
 # List of benchmarks
 BENCHMARKS_FIBER_C : [
     "itersum",
-    "sieve",
-    "state",
     "treesum",
-    "c10m",
+    # "c10m",
     "pi",
-    "skynet",
     "roundrobin",
   ]
 

@@ -116,3 +116,7 @@ examples/tiersum.wat: examples/tiersum.wat.pp
 
 out/tiersum.wasm: examples/tiersum.wat
 	$(ROOT)/stack-switching/interpreter/wasm -d -i examples/tiersum.wat -o out/tiersum.wasm
+
+out/treesum_heavy_asyncify.wasm out/treesum_heavy_wasmfx.wasm: examples/treesum_heavy_args.h examples/treesum_heavy_leftcalls.h examples/treesum_heavy_rightcalls.h examples/treesum_heavy_startcalls.h
+
+treesum_heavy: out/treesum_heavy_asyncify.wasm out/treesum_heavy_wasmfx.wasm

@@ -24,7 +24,7 @@
   (tag $tag10 (param i32))
 
   ;; The generator function
-  (func $frame3 (param $state i32) (result)
+  (func $frame9 (param $state i32) (result)
     loop $l
       ;; Calculate next value (e.g., state + 1)
       (i32.add (i32.const 1) (local.get $state))
@@ -36,13 +36,13 @@
       suspend $tag1
 
       local.get $state
-      i32.const 100000000
+      i32.const 100000000  ;; total iterations
       i32.lt_u
       br_if $l
     end
     ;;local.get $state
   )
-  (elem declare func $frame3)
+  (elem declare func $frame9)
 
 ;; Function $frame2 handles $tag2 and so on. Only $consumer at the top level handles $tag1 and the innermost suspens to that.
 #define frame(i, j) \
@@ -64,13 +64,13 @@
   (elem declare func $frame##i)
 
 frame(2, 3)
-;; frame(3, 4)
-;; frame(4, 5)
-;; frame(5, 6)
-;; frame(6, 7)
-;; frame(7, 8)
-;; frame(8, 9)
-;; frame(9, 10)
+frame(3, 4)
+frame(4, 5)
+frame(5, 6)
+frame(6, 7)
+frame(7, 8)
+frame(8, 9)
+;;frame(9, 10)
 
   (func $consumer
     (local $result i32)

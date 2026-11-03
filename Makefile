@@ -110,3 +110,9 @@ examples/treesum_heavy_args.h examples/treesum_heavy_leftcalls.h examples/treesu
 	(cd examples/; python3 treesum_heavy_generator.py $(TREESUM_HEAVY_WIDTH))
 
 out/treesum_heavy_asyncify.wasm out/treesum_heavy_asyncify.wasm: examples/treesum_heavy_args.h examples/treesum_heavy_leftcalls.h examples/treesum_heavy_rightcalls.h examples/treesum_heavy_startcalls.h
+
+examples/tiersum.wat: examples/tiersum.wat.pp
+	cpp examples/tiersum.wat.pp | sed '/^#/d' > examples/tiersum.wat
+
+out/tiersum.wasm: examples/tiersum.wat
+	$(ROOT)/stack-switching/interpreter/wasm -d -i examples/tiersum.wat -o out/tiersum.wasm

@@ -184,7 +184,8 @@ data_wasmfx_means = data_means[WASMFX_INDEX]
 data_asyncify_means = data_means[ASYNCIFY_INDEX]
 
 # Get the chart data: divide first column by second column to obtain asyncify / wasmfx ratio
-ratio = np.divide(data_asyncify_means, data_wasmfx_means)
+ratio = np.divide(data_asyncify_means, data_wasmfx_means,
+                    out=np.zeros_like(data_asyncify_means), where=data_wasmfx_means!=0)
 
 # Get the standard deviation for the ratio.
 # First we want the standard deviations as percentages of the mean:
@@ -263,7 +264,7 @@ compile_info = "\n".join([
     build_info["wasicc_ver"] 
         + "with " 
         + build_info["wasicc_flags"],
-    build_info["wasmfxtime_ver"]
+    build_info["wasmtime_ver"]
 ])
 
 # Generate string containing engine info, based on the engines that were used in this run

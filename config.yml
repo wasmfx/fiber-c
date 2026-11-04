@@ -23,7 +23,7 @@ WIZARD_OPTIONS : "--ext:stack-switching --ext:gc --stack-size=65536 --mode=dyn -
 BENCHMARKS_FIBER_C : [
     "itersum",
     "treesum",
-    # "c10m",
+    "c10m",
     "pi",
     "roundrobin",
   ]

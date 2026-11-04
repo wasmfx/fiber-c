@@ -28,7 +28,7 @@ def make_script(filename: Path, content: str):
 # Add stack pool size options in wasmfxtime benchmarking script for a particular benchmark
 def wasmfxtime_stack_pool_size_upd(benchmark: str):
     if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
-        return f"{config['WASMFXTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10000")
+        return f"{config['WASMFXTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
     else:
         return f"{config['WASMFXTIME_OPTIONS']}"
 

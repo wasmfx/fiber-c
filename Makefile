@@ -9,19 +9,22 @@ else
 endif
 
 .PHONY: all
-BENCHMARKS= hello hello itersum pi sieve skynet state treesum treesumlinear roundrobin
+BENCHMARKS= hello itersum pi sieve skynet state treesum treesumlinear roundrobin c10m
 SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:
 
+# In c10m's case, override the default initial table size and pre-compile using Wasmfxtime
+c10m : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
+c10m : WASMTIME=$(WASMFXTIME)
+
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
 	out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm \
-	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm \
-	out/c10m_wasmfx.wasm out/c10m_wasmfx.cwasm	# Make c10m with separate rules 
-		@echo Made $@ #from $^
+	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
+			@echo Made $@ #from $^
 
 $(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm \
  	out/%_switch_asyncify.cwasm out/%_switch_wasmfx.cwasm \
@@ -84,32 +87,13 @@ src/wasmfx/imports_switch.wat: src/wasmfx/imports_switch.wat.pp
 %.callgraph.dot: %.wasm
 	$(WASM_OPT) --print-call-graph $< -o $@
 
-# The c10m benchmark needs to have a larger initial table size, so it needs be built differently
-src/wasmfx/imports_c10m.wat: src/wasmfx/imports.wat.pp
-	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY_C10M) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_c10m.wat
-
-fiber_wasmfx_imports_c10m.wasm: src/wasmfx/imports_c10m.wat
-	$(WASM_INTERP) -d -i $< -o $@
-
-out/c10m_wasmfx.unopt.wasm: examples/c10m.c inc/fiber.h src/wasmfx/imports_c10m.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports_c10m.wasm | out
-	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY_C10M) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
-	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_wasmfx_imports_c10m.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
-	chmod +x $@
-
-out/c10m_wasmfx.wasm: out/c10m_wasmfx.unopt.wasm
-	$(WASM_OPT) $(WASM_OPT_FLAGS) $< -o $@
-	chmod +x $@
-
-out/c10m_wasmfx.cwasm: out/c10m_wasmfx.wasm
-	$(WASMFXTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
-
 out:
 	mkdir -p out
 
 .PHONY: clean
 clean:
 	rm -f *.wasm
-	rm -f src/wasmfx/imports.wat src/wasmfx/imports_c10m.wat src/wasmfx/imports_switch.wat
+	rm -f src/wasmfx/imports.wat src/wasmfx/imports_switch.wat
 	rm -f *.cwasm
 	rm -rf run-scripts out
 

@@ -8,8 +8,7 @@ from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 
-# STYLES = ["wasmtime_wasmfx", "wasmfx", "reified"]
-STYLES = ["wasmfx", "reified"]
+STYLES = ["grow","nogrow"]
 
 def load_results(paths):
     results = []
@@ -37,9 +36,8 @@ def plot_results(results):
     fig, ax = plt.subplots(figsize=(max(9, len(benchmarks) * 1.5), 6))
 
     colors = {
-        "reified": "#4C78A8",
-        "wasmfx": "#F58518",
-        "wasmtime_wasmfx": "#54A24B",
+        "grow": "#4C78A8",
+        "nogrow": "#F58518",
     }
 
     for i, style in enumerate(STYLES):
@@ -72,14 +70,14 @@ def plot_results(results):
 
     ax.set_xlabel("Benchmark")
     ax.set_ylabel("Execution time (seconds)")
-    ax.set_title("Benchmark performance on V8-wasmfx and V8-reified-fibers")
+    ax.set_title("Benchmark performance on V8 with and without growable-stacks enabled")
     ax.set_xticks(x)
     ax.set_xticklabels(benchmarks, rotation=30, ha="right")
     ax.legend(loc="upper right")
     ax.grid(axis="y", linestyle="--", alpha=0.4)
 
     fig.tight_layout()
-    plt.savefig("reified_results/reified_benchmark_results.png", dpi=200, bbox_inches="tight")
+    plt.savefig("growable_results/growable_benchmark_results.png", dpi=200, bbox_inches="tight")
     plt.show()
 
 

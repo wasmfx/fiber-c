@@ -19,52 +19,48 @@ static const uint32_t initial_table_capacity = WASMFX_CONT_TABLE_INITIAL_CAPACIT
 
 // The current capacity of the `$conts` table.
 static uint32_t cont_table_capacity = initial_table_capacity;
-// Number of entries at the end of `$conts` table that we haven't used so
-// far. Initialised to initial_table_capacity - 1 because we reserve index 0
-// of the table for null checks.
-// Invariant:
-// `cont_table_unused_size` + `free_list_size` <= `cont_table_capacity - 1`
 static_assert(WASMFX_CONT_TABLE_INITIAL_CAPACITY > 0, "WASMFX_CONT_TABLE_INITIAL_CAPACITY must be greater than 0");
-static uint32_t cont_table_unused_size = initial_table_capacity - 1;
 
-// This is a stack of indices into `$conts` that we have previously used, but
-// subsequently freed. Allocated as part of `fiber_init`. Invariant: Once
-// allocated, the capacity of the `free_list` (i.e., the number of `size_t`
-// values we allocate memory for) is the same as `cont_table_capacity`.
-static uint32_t* free_list = NULL;
-// Number of entries in `free_list`.
-// Invariant: free_list_size <= `cont_table_capacity`.
-static uint32_t free_list_size = 0;
+// Index 0 is reserved for null fiber handles. Indices below
+// `cont_table_next_unused` have been used at least once.
+static uint32_t cont_table_next_unused = 1;
+
+// Per-table-entry metadata. Freed table indices form an intrusive linked list,
+// avoiding a separate free-list allocation. The most recently freed index is
+// kept out of that list as a fast path for immediate free/allocate cycles.
+struct fiber_slot {
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+  void* shadow_stack_bottom;
+  void* shadow_stack_current;
+#endif
+  uint32_t next_free;
+  uint32_t reserved;
+};
+
+static struct fiber_slot* fiber_slots = NULL;
+static uint32_t free_list_head = 0;
+static uint32_t cached_free_index = 0;
 
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
 static const size_t cont_shadow_stack_size = WASMFX_CONT_SHADOW_STACK_SIZE;
-
-// Given a table index i, `sstack_bottom_ptrs[i]` is the beginning of the shadow
-// stack allocation of continuation i.
-// Invariant: sstack_bottom_ptrs has as many entries as `cont_table_capacity`
-static void** sstack_bottom_ptrs;
-// Given a table index i, `sstack_current_ptrs[i]` is the current stack pointer
-// value of continuation i.
-// Invariant: sstack_current_ptrs has as many entries as `cont_table_capacity`
-static void** sstack_current_ptrs;
-
+static_assert(sizeof(void*) == 4, "fiber_slot layout requires wasm32 pointers");
+static_assert(sizeof(struct fiber_slot) == 16, "fiber_slot layout must match imports.wat.pp");
 
 static void init_shadow_stack(cont_table_index_t table_index) {
   char* shadow_stack_bottom = malloc(cont_shadow_stack_size);
   assert(shadow_stack_bottom != NULL && "init_shadow_stack: malloc failed");
   void* shadow_stack_usable_top =
     ((char*)shadow_stack_bottom) + cont_shadow_stack_size - 0x10;
-  sstack_bottom_ptrs[table_index] = shadow_stack_bottom;
-  sstack_current_ptrs[table_index] = shadow_stack_usable_top;
+  fiber_slots[table_index].shadow_stack_bottom = shadow_stack_bottom;
+  fiber_slots[table_index].shadow_stack_current = shadow_stack_usable_top;
 }
 #endif
 
-// Counterpart to fiber_init, doing one-time initialization required in wasm
-// code. Parameter must be &sstack_current_ptrs_addr if preserving shadow stacks
-// is requested, otherwise an arbitrary value may be supplied.
+// Updates the Wasm-side base address used to find a fiber's shadow stack
+// pointer. This must be called after allocating or moving `fiber_slots`.
 extern
-import("wasmfx_fiber_init_wat")
-void wasmfx_fiber_init_wat(void* sstack_current_ptrs_addr);
+import("wasmfx_set_shadow_stack_slots")
+void wasmfx_set_shadow_stack_slots(void* shadow_stack_slots_base);
 
 extern
 import("wasmfx_grow_cont_table")
@@ -84,53 +80,54 @@ void* wasmfx_suspend(void *arg);
 
 static cont_table_index_t wasmfx_acquire_table_index(void) {
   uintptr_t table_index;
-  if (cont_table_unused_size > 0) {
-    // There is an entry in the continuation table that has not been used so far.
-    table_index = cont_table_capacity - cont_table_unused_size;
-    cont_table_unused_size--;
+  if (cached_free_index != 0) {
+    table_index = cached_free_index;
+    cached_free_index = 0;
+  } else if (free_list_head != 0) {
+    table_index = free_list_head;
+    free_list_head = fiber_slots[table_index].next_free;
+  } else if (cont_table_next_unused < cont_table_capacity) {
+    table_index = cont_table_next_unused++;
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
     init_shadow_stack(table_index);
 #endif
-  } else if (free_list_size > 0) {
-      // We can pop an element from the free list stack.
-      table_index = free_list[free_list_size - 1];
-      free_list_size--;
   } else {
-      // We have run out of table entries.
-      uint32_t new_cont_table_capacity = 2 * cont_table_capacity;
+    // We have run out of table entries. Grow the table and its pre-sized slot
+    // metadata together, then consume the first new entry.
+    uint32_t const old_cont_table_capacity = cont_table_capacity;
+    uint32_t const new_cont_table_capacity = 2 * old_cont_table_capacity;
 
-      // Ask wasm to grow the table by the previous size, and we grow the
-      // `free_list` ourselves.
-      wasmfx_grow_cont_table(cont_table_capacity);
-      free(free_list);
-      free_list = malloc(sizeof(uint32_t) * new_cont_table_capacity);
-      assert(free_list != NULL && "wasmfx_acquire_table_index: malloc failed");
-
-      // We added `cont_table_capacity` new entries to the table, and then
-      // immediately consume one for the new continuation.
-      cont_table_unused_size = cont_table_capacity - 1;
-      table_index = cont_table_capacity;
-      cont_table_capacity = new_cont_table_capacity;
+    wasmfx_grow_cont_table(old_cont_table_capacity);
+    struct fiber_slot* new_fiber_slots =
+      realloc(fiber_slots, sizeof(struct fiber_slot) * new_cont_table_capacity);
+    assert(new_fiber_slots != NULL && "wasmfx_acquire_table_index: realloc failed");
+    fiber_slots = new_fiber_slots;
+    cont_table_capacity = new_cont_table_capacity;
+    table_index = cont_table_next_unused++;
 
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-      sstack_bottom_ptrs = realloc(sstack_bottom_ptrs, sizeof(void*) * new_cont_table_capacity);
-      sstack_current_ptrs = realloc(sstack_current_ptrs, sizeof(void*) * new_cont_table_capacity);
-      init_shadow_stack(table_index);
+    wasmfx_set_shadow_stack_slots(&fiber_slots[0].shadow_stack_current);
+    init_shadow_stack(table_index);
 #endif
   }
   return table_index;
 }
 
 static void wasmfx_release_table_index(cont_table_index_t table_index) {
-  free_list[free_list_size] = table_index;
-  free_list_size++;
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
   // Note that we do not free shadow stacks, but simply reset them for
   // subsequent re-use.
   void* shadow_stack_usable_top =
-    ((char*)sstack_bottom_ptrs[table_index]) + cont_shadow_stack_size - 0x10;
-  sstack_current_ptrs[table_index] = shadow_stack_usable_top;
+    ((char*)fiber_slots[table_index].shadow_stack_bottom) + cont_shadow_stack_size - 0x10;
+  fiber_slots[table_index].shadow_stack_current = shadow_stack_usable_top;
 #endif
+
+  if (cached_free_index == 0) {
+    cached_free_index = table_index;
+  } else {
+    fiber_slots[table_index].next_free = free_list_head;
+    free_list_head = table_index;
+  }
 }
 
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
@@ -158,30 +155,27 @@ void* fiber_yield(void *arg) {
 }
 
 void fiber_init(void) {
-  free_list_size = 0;
-  cont_table_unused_size = initial_table_capacity - 1;
-  free_list = malloc(initial_table_capacity * sizeof(uint32_t));
-  assert(free_list != NULL && "fiber_init: malloc failed");
+  cont_table_capacity = initial_table_capacity;
+  cont_table_next_unused = 1;
+  free_list_head = 0;
+  cached_free_index = 0;
+  fiber_slots = calloc(initial_table_capacity, sizeof(struct fiber_slot));
+  assert(fiber_slots != NULL && "fiber_init: malloc failed");
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-  sstack_bottom_ptrs = malloc(initial_table_capacity * sizeof(void*));
-  assert(sstack_bottom_ptrs != NULL && "fiber_init: malloc failed");
-  sstack_current_ptrs = malloc(initial_table_capacity * sizeof(void*));
-  assert(sstack_current_ptrs != NULL && "fiber_init: malloc failed");
-  wasmfx_fiber_init_wat(&sstack_current_ptrs);
+  wasmfx_set_shadow_stack_slots(&fiber_slots[0].shadow_stack_current);
 #else
-  wasmfx_fiber_init_wat(NULL);
+  wasmfx_set_shadow_stack_slots(NULL);
 #endif
 }
 
 void fiber_finalize(void) {
-  free(free_list);
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-  for (size_t i = 0; i < cont_table_capacity - cont_table_unused_size; i++) {
-    free(sstack_bottom_ptrs[i]);
+  for (size_t i = 1; i < cont_table_next_unused; i++) {
+    free(fiber_slots[i].shadow_stack_bottom);
   }
-  free(sstack_bottom_ptrs);
-  free(sstack_current_ptrs);
 #endif
+  free(fiber_slots);
+  fiber_slots = NULL;
 }
 
 #undef import

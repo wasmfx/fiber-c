@@ -17,12 +17,12 @@
 // 3. After the final resume, it reduces the saved values with a
 // right-rotation chain:
 //
-```text
+// ```text
 // result = rotr(value[8191], 0)
 // result = rotr(value[8190], result)
 // ...
 // result = rotr(value[0], result)
-```
+// ```
 //
 // The result is compared with a checksum computed from the original
 // memory contents. If the suspended operand stack was lost or

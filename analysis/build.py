@@ -19,7 +19,7 @@ ENGINE_ROOT_DIR = os.getenv("ENGINE_ROOT_DIR", "/opt/wasmfx")
 
 # ---- Script generation ----
 
-SCRIPT_TEMPLATE = f"#!/bin/bash\nsetarch -R {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}"
+SCRIPT_TEMPLATE = f"#!/bin/bash\nsetarch -R taskset -c 0 {{engine_path}} {{engine_options}} out/{{benchmark}}_{{mode}}.{{suffix}}{{arg}}\n"
 
 def make_script(filename: Path, content: str):
     filename.write_text(content)

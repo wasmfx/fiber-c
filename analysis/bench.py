@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Script that calls buildscript and runs fiber-c benchmarks.
-Usage:  `./bench.py --help`
-        `./bench.py` # runs all benchmarks on all engines by default
-        `./bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir`
+Usage:  `analysis/bench.py --help`
+        `analysis/bench.py` # runs all benchmarks on all engines by default
+        `analysis/bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir`
             # runs selected benchmarks and engines, saves results to `bench_results/results_dir`
 """
 
@@ -29,7 +29,7 @@ def disabled(engine, benchmark, style):
 
 
 def generate_scripts():
-    subprocess.check_call(["./build.py"])
+    subprocess.check_call(["analysis/build.py"])
 
 
 def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
@@ -182,8 +182,7 @@ def main():
     # make binary size chart
     subprocess.check_call(
         [
-            "python3",
-            "plot_binary_sizes.py",
+            "analysis/plot_binary_sizes.py",
             f"bench_results/{path}/binary_sizes.json",
             "--benchmarks",
             *benchmarks_to_run,
@@ -200,8 +199,7 @@ def main():
     # make runtime charts
     subprocess.check_call(
         [
-            "python3",
-            "plot_benchmarks.py",
+            "analysis/plot_benchmarks.py",
             f"bench_results/{path}",
             "--benchmarks",
             *benchmarks_to_run,
@@ -218,8 +216,7 @@ def main():
         # Run the switch-specific chart script on the wasmfx result file only
         subprocess.check_call(
             [
-                "python3",
-                "plot_benchmarks_switch.py",
+                "analysis/plot_benchmarks_switch.py",
                 f"bench_results/{path}/results_wasmfx.json",
                 "--benchmarks",
                 *benchmarks_to_run,

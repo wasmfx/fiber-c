@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Buildscript that generates scripts to run them on the three wasm engines of interest (d8, wasmtime, and wizard).
-The generated scripts are in /run-scripts and can be executed with `./run-scripts/benchmark_engine_mode.sh`,
-e.g. `./run-scripts/sieve1_d8_wasmfx.sh`. Configurations are in config.yml.
+The generated scripts are in /run-scripts and can be executed with `run-scripts/benchmark_engine_mode.sh`,
+e.g. `run-scripts/sieve1_d8_wasmfx.sh`. Configurations are in config.yml.
 
-Usage:  `./build.py`
+Usage:  `analysis/build.py`
 """
 
 import yaml

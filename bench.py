@@ -22,7 +22,6 @@ all_engines = config["ENGINES"]
 
 runs_per_trial = 11   # Runs per trial to get some statistical data. Odd to make the median easy to get.
 
-
 def disabled(engine, benchmark, style):
     if engine == "wasmfxtime" and style == "switch":
         return True

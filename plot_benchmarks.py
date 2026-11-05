@@ -151,8 +151,8 @@ def array_positions(ary):
 
 
 nested_data = organize(data)
-data_means = np.array(
-    [[[cell["mean"] for cell in row] for row in plane] for plane in nested_data]
+data_medians = np.array(
+    [[[cell["median"] for cell in row] for row in plane] for plane in nested_data]
 )
 data_stddev = np.array(
     [[[cell["stddev"] for cell in row] for row in plane] for plane in nested_data]
@@ -180,21 +180,21 @@ bar_colors = [
 # ------- First chart: ratio of asyncify time to wasmfx time for each benchmark across all engines -----
 # --------------
 
-data_wasmfx_means = data_means[WASMFX_INDEX]
-data_asyncify_means = data_means[ASYNCIFY_INDEX]
+data_wasmfx_medians = data_medians[WASMFX_INDEX]
+data_asyncify_medians = data_medians[ASYNCIFY_INDEX]
 
 # Get the chart data: divide first column by second column to obtain asyncify / wasmfx ratio
-ratio = np.divide(data_asyncify_means, data_wasmfx_means,
-                    out=np.zeros_like(data_asyncify_means), where=data_wasmfx_means!=0)
+ratio = np.divide(data_asyncify_medians, data_wasmfx_medians,
+                    out=np.zeros_like(data_asyncify_medians), where=data_wasmfx_medians!=0)
 
 # Get the standard deviation for the ratio.
-# First we want the standard deviations as percentages of the mean:
+# First we want the standard deviations as percentages of the median:
 data_wasmfx_stddev = data_stddev[WASMFX_INDEX]
 data_asyncify_stddev = data_stddev[ASYNCIFY_INDEX]
 # Then we apply the formula for error propagation for division
 ratio_stddev = ratio * np.sqrt(
-    np.square(data_asyncify_stddev / data_asyncify_means)
-    + np.square(data_wasmfx_stddev / data_wasmfx_means)
+    np.square(data_asyncify_stddev / data_asyncify_medians)
+    + np.square(data_wasmfx_stddev / data_wasmfx_medians)
 )
 
 # Compute x values for bar locations, with gaps between groups of bars for each engine
@@ -239,8 +239,8 @@ ax1.errorbar(
 )
 
 # Readability features
-ax1.set(title="Benchmark results (Asyncify time / WasmFX time)", 
-        xlabel="Engine", 
+ax1.set(title="Benchmark results (Asyncify time / WasmFX time)",
+        xlabel="Engine",
         ylabel="Speedup (relative to Asyncify)",
 )
 
@@ -258,11 +258,11 @@ ax2.tick_params(axis='y', colors='white')
 
 # Generate string containing compiler info
 compile_info = "\n".join([
-    build_info["wasm_opt_ver"] 
-        + "with " 
+    build_info["wasm_opt_ver"]
+        + "with "
         + build_info["wasm_opt_flags"],
-    build_info["wasicc_ver"] 
-        + "with " 
+    build_info["wasicc_ver"]
+        + "with "
         + build_info["wasicc_flags"],
     build_info["wasmtime_ver"]
 ])
@@ -297,7 +297,7 @@ else:
 # and each bar corresponds to a different backend (wasmfx, asyncify).
 for i, engine in enumerate(engines):
     # Get array of data from this engine
-    engine_data = data_means[:, :, i]
+    engine_data = data_medians[:, :, i]
     engine_data_stddev = data_stddev[:, :, i]
 
     bar_loc = array_positions(engine_data)
@@ -338,8 +338,8 @@ for i, engine in enumerate(engines):
     )
 
     # Readability features
-    ax1.set(title=f"Benchmark results (absolute times) for {engine}", 
-        xlabel="Benchmark", 
+    ax1.set(title=f"Benchmark results (absolute times) for {engine}",
+        xlabel="Benchmark",
         ylabel="Time (seconds)",
 )
     ax1.grid(visible=True, axis="y")
@@ -377,7 +377,7 @@ for i, engine in enumerate(engines):
 for i, benchmark in enumerate(benches):
     # Get array of data from this benchmark
     # There should always be 2 * len(engines) entries for each benchmark
-    bench_data = data_means[:, i]
+    bench_data = data_medians[:, i]
     bench_data_stddev = data_stddev[:, i]
 
     bar_loc = array_positions(bench_data)
@@ -419,8 +419,8 @@ for i, benchmark in enumerate(benches):
     )
 
     # Readability features
-    ax1.set(title=f"Benchmark results (absolute times) for {benchmark}", 
-        xlabel="Engine", 
+    ax1.set(title=f"Benchmark results (absolute times) for {benchmark}",
+        xlabel="Engine",
         ylabel="Time (seconds)",)
     ax1.grid(visible=True, axis="y")
     ax1.legend(["WasmFX", "Asyncify"], loc="upper right")

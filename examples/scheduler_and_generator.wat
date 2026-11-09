@@ -2,6 +2,8 @@
 ;; It demonstrates how things work when we have more than one tag. The task-yields presently only
 ;; happen on the outer loop of the consumer for the generator, and as a consequence all the
 ;; suspends are only looking up the stack by one stack segment.
+;;
+;; Compile with /opt/wasmfx/stack-switching/interpreter/wasm -d -i examples/scheduler_and_generator.wat -o out/scheduler_and_generator.wasm
 (module $scheduler_and_generator
   (rec
     ;; Function type of all tasks

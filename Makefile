@@ -10,6 +10,8 @@ endif
 
 .PHONY: all
 BENCHMARKS= hello itersum pi sieve skynet state treesum treesumlinear roundrobin c10m
+V8_BENCHMARKS=itersum_v8 treesum_v8 pi_v8 c10m_v8
+WASI_BENCHMARKS=itersum_wasmtime treesum_wasmtime pi_wasmtime c10m_wasmtime
 SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 # This strange invocation tells make not to delete "intermediate products".
@@ -17,6 +19,9 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 # In c10m's case, override the default initial table size with the following value
 c10m : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
+
+c10m_v8 : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
+c10m_v8 : WASMTIME=$(WASMFXTIME)
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 

@@ -1,14 +1,10 @@
 # List of valid engines
-ENGINES : [ "d8", "wasmtime", "wasmfxtime", "wizard" ]
+ENGINES : [ "d8", "wasmtime", "wizard" ]
 
 # (Relative) paths to engines and engine-specific options
 # Wasmtime
-WASMTIME_PATH : "/wasmtime/target/release/wasmtime"
+WASMTIME_PATH : "/wasmfxtime/target/release/wasmtime"
 WASMTIME_OPTIONS : "run --allow-precompiled -W=stack-switching"
-
-# Wasmfxtime
-WASMFXTIME_PATH : "/wasmfxtime/target/release/wasmtime"
-WASMFXTIME_OPTIONS : "run --allow-precompiled -W=stack-switching"
 
 # V8
 D8_PATH : "/v8/v8/out/x64.release/d8"

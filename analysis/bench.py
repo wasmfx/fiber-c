@@ -22,12 +22,6 @@ all_engines = config["ENGINES"]
 
 runs_per_trial = 11   # Runs per trial to get some statistical data. Odd to make the median easy to get.
 
-def disabled(engine, benchmark, style):
-    if engine == "wasmfxtime" and style == "switch":
-        return True
-    return False
-
-
 def generate_scripts():
     subprocess.check_call(["analysis/build.py"])
 
@@ -112,7 +106,7 @@ def main():
     parser.add_argument(
         "--engines",
         nargs="*",
-        help="List of engines to run (d8, wasmtime, wasmfxtime, wizard)",
+        help="List of engines to run (d8, wasmtime, wizard)",
         default=all_engines,
     )
     parser.add_argument(
@@ -140,10 +134,9 @@ def main():
             raise ValueError(
                 f"Error: invalid switch benchmark name(s). Valid options are: {', '.join(switch_benchmarks)}"
             )
-        # Can't run switch experiments on wasmfxtime so we are banning that option
         if not set(args.engines).issubset(set(["d8", "wizard", "wasmtime"])):
             raise ValueError(
-                f"Error: invalid engine name(s). Valid options are: d8, wizard, wasmtime (switch experiments are broken on wasmfxtime)"
+                f"Error: invalid engine name(s). Valid options are: d8, wizard, wasmtime"
             )
     else:
         if not set(args.benchmarks).issubset(set(all_benchmarks)):

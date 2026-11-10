@@ -25,12 +25,13 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
-# Add stack pool size options in wasmfxtime benchmarking script for a particular benchmark
-def wasmfxtime_stack_pool_size_upd(benchmark: str):
+
+# Add stack pool size options in wasmtime benchmarking script for a particular benchmark
+def wasmtime_stack_pool_size_upd(benchmark: str):
     if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
-        return f"{config['WASMFXTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
+        return f"{config['WASMTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
     else:
-        return f"{config['WASMFXTIME_OPTIONS']}"
+        return f"{config['WASMTIME_OPTIONS']}"
 
 def generate_scripts(benchmark: str, engines: list[str]):
     # Set arguments for benchmarks that need them
@@ -50,11 +51,7 @@ def generate_scripts(benchmark: str, engines: list[str]):
                 case "wasmtime":
                     engine_path=config["WASMTIME_PATH"]
                     suffix="cwasm"
-                    engine_options=config["WASMTIME_OPTIONS"]
-                case "wasmfxtime":
-                    engine_path=config["WASMFXTIME_PATH"]
-                    suffix="wasmfxtime.cwasm"
-                    engine_options=wasmfxtime_stack_pool_size_upd(benchmark)
+                    engine_options=wasmtime_stack_pool_size_upd(benchmark)
                 case "wizard":
                     engine_path=config["WIZARD_PATH"]
                     engine_options=config["WIZARD_OPTIONS"]
@@ -65,7 +62,7 @@ def generate_scripts(benchmark: str, engines: list[str]):
                     suffix="wasm"
             # stick this all into the script template
             # Don't run c10m on normal wasmtime or wizard for now
-            if benchmark == "c10m" and (engine == "wasmtime" or engine == "wizard"):
+            if benchmark == "c10m" and (engine == "wizard"):
                 content = ""
             else:
                 content = SCRIPT_TEMPLATE.format(

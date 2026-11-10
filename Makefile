@@ -17,9 +17,8 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:
 
-# In c10m's case, override the default initial table size and pre-compile using Wasmfxtime
+# In c10m's case, override the default initial table size with the following value
 c10m : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
-c10m : WASMTIME=$(WASMFXTIME)
 
 c10m_v8 : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
 c10m_v8 : WASMTIME=$(WASMFXTIME)
@@ -27,7 +26,6 @@ c10m_v8 : WASMTIME=$(WASMFXTIME)
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
-	out/%_asyncify.wasmfxtime.cwasm out/%_wasmfx.wasmfxtime.cwasm \
 	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
 			@echo Made $@ #from $^
 
@@ -76,9 +74,6 @@ out/%.cwasm: out/%.wasm
 
 out/%_switch.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
-
-out/%.wasmfxtime.cwasm: out/%.wasm
-	$(WASMFXTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports.wat

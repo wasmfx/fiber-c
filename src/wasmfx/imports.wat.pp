@@ -1,8 +1,6 @@
 (module $fiber_wasmfx
   (type $ft1 (func (param i32) (result i32)))
-  (type $ft2 (func (param i32 i32) (result i32)))
   (type $ct1 (cont $ft1))
-  (type $ct2 (cont $ft2))
 
   ;; We must make sure that there is only a single memory, so that our
   ;; load/store instructions act on the C heap, not a separate memory.
@@ -15,10 +13,14 @@
   (import "main" "__stack_pointer" (global $sstack_ptr (mut i32)))
 #endif
 
-  ;; Base address of `fiber_slots[0].shadow_stack_current`. Each fiber slot is
-  ;; 16 bytes, so the current shadow-stack pointer for a continuation is at
-  ;; `$shadow_stack_slots_base + cont_index * 16`.
-  (global $shadow_stack_slots_base (mut i32) (i32.const 0))
+  ;; Base address of the C-side `fiber_slots` array. Each slot is 16 bytes;
+  ;; its shadow-stack pointer is at offset 4 and entry function index at 12.
+  (global $fiber_slots_base (mut i32) (i32.const 0))
+
+  ;; The index of the continuation about to be resumed. The trampoline of a
+  ;; fresh continuation consumes this before entering user code. Resumed
+  ;; continuations continue after `suspend` and do not inspect it.
+  (global $starting_cont_index (mut i32) (i32.const 0))
 
   ;; Keep the initial size of this table in sync with INITIAL_TABLE_CAPACITY in
   ;; .c file.
@@ -33,9 +35,9 @@
   )
 
   ;; Called after allocating or moving the C-side fiber slot array.
-  (func $set_shadow_stack_slots (export "wasmfx_set_shadow_stack_slots")
-        (param $shadow_stack_slots_base i32)
-    (global.set $shadow_stack_slots_base (local.get $shadow_stack_slots_base))
+  (func $set_fiber_slots (export "wasmfx_set_fiber_slots")
+        (param $fiber_slots_base i32)
+    (global.set $fiber_slots_base (local.get $fiber_slots_base))
   )
 
   ;; This function is the entry point of all of our continuations.
@@ -44,24 +46,24 @@
   ;; `funcref`. There is no way to downcast from `funcref` to a concrete function
   ;; reference type. Thus we cannot call `cont.new` on entries from
   ;; `$indirect_function_table` directly, but must use this trampoline instead.
-  (func $wasmfx_entry_trampoline (param $func_index i32) (param $arg i32) (result i32)
+  (func $wasmfx_entry_trampoline (param $arg i32) (result i32)
     (call_indirect $indirect_function_table (type $ft1)
       (local.get $arg)
-      (local.get $func_index)
+      (i32.load offset=12
+        (i32.add
+          (global.get $fiber_slots_base)
+          (i32.shl (global.get $starting_cont_index) (i32.const 4))))
     )
   )
   (elem declare func $wasmfx_entry_trampoline)
 
 
   (func $indexed_cont_new (export "wasmfx_indexed_cont_new")
-    (param $func_index i32)
     (param $cont_index i32)
     (local $cont (ref $ct1))
 
-    (local.get $func_index)
-    (cont.new $ct2 (ref.func $wasmfx_entry_trampoline))
-    (cont.bind $ct2 $ct1)
-    (local.set $cont)
+    (local.set $cont
+      (cont.new $ct1 (ref.func $wasmfx_entry_trampoline)))
 
     (table.set $conts (local.get $cont_index) (local.get $cont))
   )
@@ -73,7 +75,7 @@
     (result i32)
     (local $k (ref $ct1))
     (local $old_shadow_sp i32)
-    (local $shadow_sp_slot i32)
+    (local $fiber_slot i32)
 
     (block $handler (result i32 (ref $ct1) )
       (block $on_error
@@ -81,15 +83,20 @@
         (local.set $k (br_on_null $on_error
            (table.get $conts (local.get $cont_index))))
 
+        ;; A fresh continuation uses this index to find its entry function.
+        ;; A continuation being resumed after a yield ignores it.
+        (global.set $starting_cont_index (local.get $cont_index))
+
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
         ;; Cache the address of the fiber shadow-stack pointer across the
         ;; resume so the suspension path does not recompute it.
-        (local.set $shadow_sp_slot
+        (local.set $fiber_slot
           (i32.add
-            (global.get $shadow_stack_slots_base)
+            (global.get $fiber_slots_base)
             (i32.shl (local.get $cont_index) (i32.const 4))))
         (local.set $old_shadow_sp (global.get $sstack_ptr))
-        (global.set $sstack_ptr (i32.load (local.get $shadow_sp_slot)))
+        (global.set $sstack_ptr
+          (i32.load offset=4 (local.get $fiber_slot)))
 #endif
 
         ;; resume the continuation
@@ -115,8 +122,8 @@
     (i32.store (local.get $result_ptr) (i32.const 1)) ;; FIBER_YIELD
 
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-    (i32.store
-      (local.get $shadow_sp_slot)
+    (i32.store offset=4
+      (local.get $fiber_slot)
       (global.get $sstack_ptr))
 
     (global.set $sstack_ptr (local.get $old_shadow_sp))

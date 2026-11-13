@@ -32,19 +32,22 @@ struct fiber_slot {
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
   void* shadow_stack_bottom;
   void* shadow_stack_current;
+#else
+  uint32_t shadow_stack_padding[2];
 #endif
   uint32_t next_free;
-  uint32_t reserved;
+  uint32_t entry_func_index;
 };
 
 static struct fiber_slot* fiber_slots = NULL;
 static uint32_t free_list_head = 0;
 static uint32_t cached_free_index = 0;
 
-#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-static const size_t cont_shadow_stack_size = WASMFX_CONT_SHADOW_STACK_SIZE;
 static_assert(sizeof(void*) == 4, "fiber_slot layout requires wasm32 pointers");
 static_assert(sizeof(struct fiber_slot) == 16, "fiber_slot layout must match imports.wat.pp");
+
+#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
+static const size_t cont_shadow_stack_size = WASMFX_CONT_SHADOW_STACK_SIZE;
 
 static void init_shadow_stack(cont_table_index_t table_index) {
   char* shadow_stack_bottom = malloc(cont_shadow_stack_size);
@@ -56,11 +59,11 @@ static void init_shadow_stack(cont_table_index_t table_index) {
 }
 #endif
 
-// Updates the Wasm-side base address used to find a fiber's shadow stack
-// pointer. This must be called after allocating or moving `fiber_slots`.
+// Updates the Wasm-side base address used to find fiber metadata. This must be
+// called after allocating or moving `fiber_slots`.
 extern
-import("wasmfx_set_shadow_stack_slots")
-void wasmfx_set_shadow_stack_slots(void* shadow_stack_slots_base);
+import("wasmfx_set_fiber_slots")
+void wasmfx_set_fiber_slots(void* fiber_slots_base);
 
 extern
 import("wasmfx_grow_cont_table")
@@ -68,7 +71,7 @@ void wasmfx_grow_cont_table(uint32_t);
 
 extern
 import("wasmfx_indexed_cont_new")
-void wasmfx_indexed_cont_new(fiber_entry_point_t, cont_table_index_t);
+void wasmfx_indexed_cont_new(cont_table_index_t);
 
 extern
 import("wasmfx_indexed_resume")
@@ -105,8 +108,8 @@ static cont_table_index_t wasmfx_acquire_table_index(void) {
     cont_table_capacity = new_cont_table_capacity;
     table_index = cont_table_next_unused++;
 
+    wasmfx_set_fiber_slots(fiber_slots);
 #ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-    wasmfx_set_shadow_stack_slots(&fiber_slots[0].shadow_stack_current);
     init_shadow_stack(table_index);
 #endif
   }
@@ -132,7 +135,12 @@ static void wasmfx_release_table_index(cont_table_index_t table_index) {
 
 fiber_t fiber_alloc(fiber_entry_point_t entry) {
   cont_table_index_t table_index = wasmfx_acquire_table_index();
-  wasmfx_indexed_cont_new(entry, table_index);
+  static_assert(sizeof(entry) == sizeof(uint32_t),
+                "function-table indices must be 32 bits");
+  __builtin_memcpy(&fiber_slots[table_index].entry_func_index,
+                   &entry,
+                   sizeof(entry));
+  wasmfx_indexed_cont_new(table_index);
 
   return (fiber_t) table_index;
 }
@@ -161,11 +169,7 @@ void fiber_init(void) {
   cached_free_index = 0;
   fiber_slots = calloc(initial_table_capacity, sizeof(struct fiber_slot));
   assert(fiber_slots != NULL && "fiber_init: malloc failed");
-#ifdef FIBER_WASMFX_PRESERVE_SHADOW_STACK
-  wasmfx_set_shadow_stack_slots(&fiber_slots[0].shadow_stack_current);
-#else
-  wasmfx_set_shadow_stack_slots(NULL);
-#endif
+  wasmfx_set_fiber_slots(fiber_slots);
 }
 
 void fiber_finalize(void) {

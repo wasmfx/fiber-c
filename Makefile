@@ -64,6 +64,11 @@ out/%_wasmfx.stripped.wasm: out/%_wasmfx.wasm
 out/%_asyncify.stripped.wasm: out/%_asyncify.wasm
 	$(WASM_OPT) $(BINARYEN_FLAGS) --strip $< -o $@
 
+out/pi_asyncify.wasm: examples/params.h
+out/pi_wasmfx.wasm: examples/params.h
+out/roundrobin_asyncify.wasm: examples/params.h
+out/roundrobin_wasmfx.wasm: examples/params.h
+
 out/%.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 

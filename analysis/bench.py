@@ -32,6 +32,8 @@ runs_per_trial = 11
 
 
 def disabled(engine, benchmark, style):
+    if benchmark == "c10m" and engine == "wizard":
+        return True
     return False
 
 

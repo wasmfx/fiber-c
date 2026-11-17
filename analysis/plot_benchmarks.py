@@ -90,6 +90,7 @@ for i, filename in enumerate(info_files):
     with open(filename) as f:
         build_info.update(json.load(f))
 
+
 # Predicates for the hyperfine output json format, to filter results by
 # benchmark, engine, and style (wasmfx vs asyncify).
 def benchmark_is(result, benchmark):
@@ -184,8 +185,12 @@ data_wasmfx_medians = data_medians[WASMFX_INDEX]
 data_asyncify_medians = data_medians[ASYNCIFY_INDEX]
 
 # Get the chart data: divide first column by second column to obtain asyncify / wasmfx ratio
-ratio = np.divide(data_asyncify_medians, data_wasmfx_medians,
-                    out=np.zeros_like(data_asyncify_medians), where=data_wasmfx_medians!=0)
+ratio = np.divide(
+    data_asyncify_medians,
+    data_wasmfx_medians,
+    out=np.zeros_like(data_asyncify_medians),
+    where=data_wasmfx_medians != 0,
+)
 
 # Get the standard deviation for the ratio.
 # First we want the standard deviations as percentages of the median:
@@ -203,7 +208,9 @@ ratio_stddev = ratio * np.sqrt(
 bar_loc = array_positions(ratio)
 
 # Plot the data
-fig, (ax1, ax2) = plt.subplots(2,1, figsize=(10, 10), gridspec_kw={'height_ratios': [3, 1]})
+fig, (ax1, ax2) = plt.subplots(
+    2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": [3, 1]}
+)
 
 for i in range(len(ratio)):
     ax1.bar(
@@ -239,9 +246,10 @@ ax1.errorbar(
 )
 
 # Readability features
-ax1.set(title="Benchmark results (Asyncify time / WasmFX time)",
-        xlabel="Engine",
-        ylabel="Speedup (relative to Asyncify)",
+ax1.set(
+    title="Benchmark results (Asyncify time / WasmFX time)",
+    xlabel="Engine",
+    ylabel="Speedup (relative to Asyncify)",
 )
 
 ax1.grid(visible=True, axis="y")
@@ -253,19 +261,17 @@ ax1.axhline(y=1.0, color="r", linestyle="--", linewidth=3, label="WasmFX = Async
 
 # Add text to ax2
 ax2.axis([0, 10, 0, 10])
-ax2.tick_params(axis='x', colors='white')
-ax2.tick_params(axis='y', colors='white')
+ax2.tick_params(axis="x", colors="white")
+ax2.tick_params(axis="y", colors="white")
 
 # Generate string containing compiler info
-compile_info = "\n".join([
-    build_info["wasm_opt_ver"]
-        + "with "
-        + build_info["wasm_opt_flags"],
-    build_info["wasicc_ver"]
-        + "with "
-        + build_info["wasicc_flags"],
-    build_info["wasmtime_ver"]
-])
+compile_info = "\n".join(
+    [
+        build_info["wasm_opt_ver"] + "with " + build_info["wasm_opt_flags"],
+        build_info["wasicc_ver"] + "with " + build_info["wasicc_flags"],
+        build_info["wasmtime_ver"],
+    ]
+)
 
 # Generate string containing engine info, based on the engines that were used in this run
 engine_info = "\n".join([build_info[engine] for engine in engines])
@@ -274,14 +280,14 @@ engine_info = "\n".join([build_info[engine] for engine in engines])
 args_info = "\n".join([bench + ": " + build_info[bench] for bench in benches])
 
 # Now put these on the lower subplot.
-ax2.text(0.5, 8, 'Compilation info', weight='bold', fontsize=10)
-ax2.text(0.5, 5.5, compile_info, fontsize=9 )
+ax2.text(0.5, 8, "Compilation info", weight="bold", fontsize=10)
+ax2.text(0.5, 5.5, compile_info, fontsize=9)
 
-ax2.text(5.5, 8, 'Benchmark arguments', weight='bold', fontsize=10)
-ax2.text(5.5, 4.5, args_info, fontsize=9 )
+ax2.text(5.5, 8, "Benchmark arguments", weight="bold", fontsize=10)
+ax2.text(5.5, 4.5, args_info, fontsize=9)
 
-ax2.text(0.5, 4, 'Engine info', weight='bold', fontsize=10)
-ax2.text(0.5, 1.5, engine_info, fontsize=9 )
+ax2.text(0.5, 4, "Engine info", weight="bold", fontsize=10)
+ax2.text(0.5, 1.5, engine_info, fontsize=9)
 
 # Export figure
 if args.output:
@@ -303,7 +309,9 @@ for i, engine in enumerate(engines):
     bar_loc = array_positions(engine_data)
 
     # Plot data
-    fig, (ax1, ax2) = plt.subplots(2,1, figsize=(10, 10), gridspec_kw={'height_ratios': [3, 1]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": [3, 1]}
+    )
 
     for j in range(len(styles)):
         ax1.bar(
@@ -338,28 +346,29 @@ for i, engine in enumerate(engines):
     )
 
     # Readability features
-    ax1.set(title=f"Benchmark results (absolute times) for {engine}",
+    ax1.set(
+        title=f"Benchmark results (absolute times) for {engine}",
         xlabel="Benchmark",
         ylabel="Time (seconds)",
-)
+    )
     ax1.grid(visible=True, axis="y")
 
     ax1.legend(["WasmFX", "Asyncify"], loc="upper right")
 
     # Add text to ax2
     ax2.axis([0, 10, 0, 10])
-    ax2.tick_params(axis='x', colors='white')
-    ax2.tick_params(axis='y', colors='white')
+    ax2.tick_params(axis="x", colors="white")
+    ax2.tick_params(axis="y", colors="white")
 
-    ax2.text(0.5, 8, 'Compilation info', weight='bold', fontsize=10)
-    ax2.text(0.5, 5.5, compile_info, fontsize=9 )
+    ax2.text(0.5, 8, "Compilation info", weight="bold", fontsize=10)
+    ax2.text(0.5, 5.5, compile_info, fontsize=9)
 
-    ax2.text(5.5, 8, 'Benchmark arguments', weight='bold', fontsize=10)
-    ax2.text(5.5, 4.5, args_info, fontsize=9 )
+    ax2.text(5.5, 8, "Benchmark arguments", weight="bold", fontsize=10)
+    ax2.text(5.5, 4.5, args_info, fontsize=9)
 
     # Version of the current engine being charted
-    ax2.text(0.5, 4, 'Engine version', weight='bold', fontsize=10)
-    ax2.text(0.5, 3, build_info[engine], fontsize=9 )
+    ax2.text(0.5, 4, "Engine version", weight="bold", fontsize=10)
+    ax2.text(0.5, 3, build_info[engine], fontsize=9)
 
     # Export figure
     if args.output:
@@ -383,7 +392,9 @@ for i, benchmark in enumerate(benches):
     bar_loc = array_positions(bench_data)
 
     # Plot data
-    fig, (ax1, ax2) = plt.subplots(2,1, figsize=(10, 10), gridspec_kw={'height_ratios': [3, 1]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": [3, 1]}
+    )
 
     for i in range(len(bench_data)):
         ax1.bar(
@@ -419,27 +430,28 @@ for i, benchmark in enumerate(benches):
     )
 
     # Readability features
-    ax1.set(title=f"Benchmark results (absolute times) for {benchmark}",
+    ax1.set(
+        title=f"Benchmark results (absolute times) for {benchmark}",
         xlabel="Engine",
-        ylabel="Time (seconds)",)
+        ylabel="Time (seconds)",
+    )
     ax1.grid(visible=True, axis="y")
     ax1.legend(["WasmFX", "Asyncify"], loc="upper right")
 
     # Add text to ax2
     ax2.axis([0, 10, 0, 10])
-    ax2.tick_params(axis='x', colors='white')
-    ax2.tick_params(axis='y', colors='white')
+    ax2.tick_params(axis="x", colors="white")
+    ax2.tick_params(axis="y", colors="white")
 
-    ax2.text(0.5, 8, 'Compilation info', weight='bold', fontsize=10)
-    ax2.text(0.5, 5.5, compile_info, fontsize=9 )
+    ax2.text(0.5, 8, "Compilation info", weight="bold", fontsize=10)
+    ax2.text(0.5, 5.5, compile_info, fontsize=9)
 
-    ax2.text(5.5, 8, f'Benchmark arguments ({benchmark})', weight='bold', fontsize=10)
-    ax2.text(5.5, 7, build_info[benchmark], fontsize=9 )
+    ax2.text(5.5, 8, f"Benchmark arguments ({benchmark})", weight="bold", fontsize=10)
+    ax2.text(5.5, 7, build_info[benchmark], fontsize=9)
 
     # Version of the current engine being charted
-    ax2.text(0.5, 4, 'Engine version', weight='bold', fontsize=10)
-    ax2.text(0.5, 1.5, engine_info, fontsize=9 )
-
+    ax2.text(0.5, 4, "Engine version", weight="bold", fontsize=10)
+    ax2.text(0.5, 1.5, engine_info, fontsize=9)
 
     # Export figure
     if args.output:

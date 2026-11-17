@@ -77,9 +77,6 @@ out/%_asyncify.stripped.wasm: out/%_asyncify.wasm
 out/%.cwasm: out/%.wasm
 	$(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
 
-out/%_switch.cwasm: out/%_switch.wasm
-    $(WASMTIME) compile -W=exceptions,function-references,gc,stack-switching -O opt-level=2 $< -o $@
-
 src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports.wat
 

@@ -10,54 +10,54 @@ import subprocess
 import json
 import os
 
-# Run makefile which dumps the compiler info
-data = subprocess.check_output(["make", "-f", "run_info/compiler_info.mk"], text=True)
-
-# Process this info into a dict
-config = {}
-
-for line in data.splitlines():
-    line = line.strip()
-    key, value = line.split("=", 1)
-    config[key.strip()] = value.strip()
-
-# Get version numbers of things
-wasm_opt_ver = subprocess.check_output([config["wasm_opt"], "--version"]).decode().split('\n', 1)[0]
-wasm_merge_ver = subprocess.check_output([config["wasm_merge"], "--version"]).decode().split('\n', 1)[0]
-wasicc_ver = subprocess.check_output([config["wasicc"], "-v"], stderr=subprocess.STDOUT).decode().split('\n', 1)[0]
-wasm_interp_ver = "TODO: figure out how to get version" #subprocess.check_output([config["wasm_interp"],"-v", "-e", "\"\""]).decode().split('\n', 1)[0]
-wasmfxtime_ver = subprocess.check_output([config["wasmfxtime"], "--version"]).decode().split('\n', 1)[0]
-# and this is wasmtime
-wasmtime_ver = subprocess.check_output([config["wasmtime"], "--version"]).decode().split('\n', 1)[0]
-
-# -------- Cleaning up the json --------
-
-# Here's a function that strips a string of a substring between brackets
-def strip_brackets(s):
-    start = s.find("(")
-    end = s.find(")", start)
-    if start != -1 and end != -1:
-        return s[:start] + s[end+1:]
-    return s
-
-# Extract version number from wasm_opt_ver (removing long number at the end)
-wasm_opt_ver = strip_brackets(wasm_opt_ver)
-
-# Extract -O flag from wasm_opt_flags
-wasm_opt_flags = config["wasm_opt_flags"]
-wasm_opt_flags = wasm_opt_flags[wasm_opt_flags.index("-O"):][:3]
-
-# Extract version number from wasicc_ver (removing long url at the end)
-wasicc_ver = strip_brackets(wasicc_ver)
-
-# Extract -O flag from waiscc_flags
-waiscc_flags = config["wasi_flags"]
-wasicc_flags = waiscc_flags[waiscc_flags.index("-O"):][:3]
-
-# Extract version number from wasmfxtime_ver (removing long number at the end)
-wasmfxtime_ver = strip_brackets(wasmfxtime_ver)
-
 def main(arg):
+    # Run makefile which dumps the compiler info
+    data = subprocess.check_output(["make", "-f", "run_info/compiler_info.mk"], text=True)
+
+    # Process this info into a dict
+    config = {}
+
+    for line in data.splitlines():
+        line = line.strip()
+        key, value = line.split("=", 1)
+        config[key.strip()] = value.strip()
+
+    # Get version numbers of things
+    wasm_opt_ver = subprocess.check_output([config["wasm_opt"], "--version"]).decode().split('\n', 1)[0]
+    wasm_merge_ver = subprocess.check_output([config["wasm_merge"], "--version"]).decode().split('\n', 1)[0]
+    wasicc_ver = subprocess.check_output([config["wasicc"], "-v"], stderr=subprocess.STDOUT).decode().split('\n', 1)[0]
+    wasm_interp_ver = "TODO: figure out how to get version" #subprocess.check_output([config["wasm_interp"],"-v", "-e", "\"\""]).decode().split('\n', 1)[0]
+    wasmfxtime_ver = subprocess.check_output([config["wasmfxtime"], "--version"]).decode().split('\n', 1)[0]
+    # and this is wasmtime
+    wasmtime_ver = subprocess.check_output([config["wasmtime"], "--version"]).decode().split('\n', 1)[0]
+
+    # -------- Cleaning up the json --------
+
+    # Here's a function that strips a string of a substring between brackets
+    def strip_brackets(s):
+        start = s.find("(")
+        end = s.find(")", start)
+        if start != -1 and end != -1:
+            return s[:start] + s[end+1:]
+        return s
+
+    # Extract version number from wasm_opt_ver (removing long number at the end)
+    wasm_opt_ver = strip_brackets(wasm_opt_ver)
+
+    # Extract -O flag from wasm_opt_flags
+    wasm_opt_flags = config["wasm_opt_flags"]
+    wasm_opt_flags = wasm_opt_flags[wasm_opt_flags.index("-O"):][:3]
+
+    # Extract version number from wasicc_ver (removing long url at the end)
+    wasicc_ver = strip_brackets(wasicc_ver)
+
+    # Extract -O flag from waiscc_flags
+    waiscc_flags = config["wasi_flags"]
+    wasicc_flags = waiscc_flags[waiscc_flags.index("-O"):][:3]
+
+    # Extract version number from wasmfxtime_ver (removing long number at the end)
+    wasmfxtime_ver = strip_brackets(wasmfxtime_ver)
+
     # make the output directory if necessary
     os.makedirs(str(arg), exist_ok=True)
 

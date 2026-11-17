@@ -17,6 +17,9 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
+run-scripts:
+	analysis/build.py
+
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
 	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
 			@echo Made $@ #from $^

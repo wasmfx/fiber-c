@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # ///
 
-"""This script finds out the version and flags of compiler tools used for 
+"""This script finds out the version and flags of compiler tools used for
     a particular benchmarking run."""
 
 import subprocess

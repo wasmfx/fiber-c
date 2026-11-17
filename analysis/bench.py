@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
-Script that calls buildscript and runs fiber-c benchmarks.
+Run fiber-c benchmarks, generating JSON and CSV result data files.
+
+Will build the .wasm files, generate "run scripts" for each benchmark mode, and
+then invoke the measurement harness in all selected combinations.
+
+Also generates run_info/ which summarizes compiler and engine versions and
+command-line options used for each.
+
 Usage:  `analysis/bench.py --help`
         `analysis/bench.py` # runs all benchmarks on all engines by default
         `analysis/bench.py --benchmarks sieve1 itersum --engines d8 wasmtime -o results_dir`
@@ -20,7 +27,9 @@ switch_benchmarks = config["BENCHMARKS_FIBER_C_SWITCH"]
 
 all_engines = config["ENGINES"]
 
-runs_per_trial = 11   # Runs per trial to get some statistical data. Odd to make the median easy to get.
+# Runs per trial to get some statistical data. Odd to ensure the median is one of the values.
+runs_per_trial = 11
+
 
 def generate_scripts():
     subprocess.check_call(["analysis/build.py"])
@@ -133,11 +142,14 @@ def main():
     os.makedirs(f"bench_results/{path}/charts/absolute_benchmarks", exist_ok=True)
     os.makedirs(f"bench_results/{path}/charts/absolute_engines", exist_ok=True)
     os.makedirs(f"bench_results/{path}/charts/relative", exist_ok=True)
+
     # generate the benchmarking scripts
     generate_scripts()
+
     # compile the wasm binaries for each benchmark (the buildscript does this for both switch and non-switch benchmarks in the same call)
     for benchmark in benchmarks_to_run:
         subprocess.check_call(["make", benchmark])
+
     # if running switch experiments, update benchmarks to include switch versions of the selected benchmarks
     #    e.g. if user selects "itersum", also add "itersum_switch"
     if args.switch:
@@ -145,8 +157,10 @@ def main():
             zip([b + "_switch" for b in benchmarks_to_run], benchmarks_to_run)
         )
         benchmarks_to_run = list(sum(benchmarks_to_run, ()))  # flatten list of tuples
+
     # get binary size data
     get_binary_sizes(benchmarks_to_run, "binary_sizes", path)
+
     # make binary size chart
     subprocess.check_call(
         [
@@ -178,6 +192,7 @@ def main():
             f"bench_results/{path}/charts",
         ]
     )
+
     # Make extra charts for switch benchmarks
     if args.switch:
         # Put the extra charts in this directory

@@ -112,7 +112,7 @@ def fetch_one(data, style, benchmark, engine):
         if style_is(x, style) and benchmark_is(x, benchmark) and engine_is(x, engine)
     ]
     if len(results) < 1:
-        raise ValueError(f"No data for {style} {benchmark} {engine}.")
+        return np.nan
     if len(results) > 1:
         raise ValueError(f"Too many data points for {style} {benchmark} {engine}!")
     return results[0]
@@ -151,12 +151,26 @@ def array_positions(ary):
     ]
 
 
+def safe_get(x, field):
+    print(x)
+    if type(x) != dict:
+        return x
+    else:
+        return x[field]
+
+
 nested_data = organize(data)
 data_medians = np.array(
-    [[[cell["median"] for cell in row] for row in plane] for plane in nested_data]
+    [
+        [[safe_get(cell, "median") for cell in row] for row in plane]
+        for plane in nested_data
+    ]
 )
 data_stddev = np.array(
-    [[[cell["stddev"] for cell in row] for row in plane] for plane in nested_data]
+    [
+        [[safe_get(cell, "stddev") for cell in row] for row in plane]
+        for plane in nested_data
+    ]
 )
 # We now have two numpy arrays whose dimensions are [style][benchmark][engine]
 
@@ -184,12 +198,14 @@ bar_colors = [
 data_wasmfx_medians = data_medians[WASMFX_INDEX]
 data_asyncify_medians = data_medians[ASYNCIFY_INDEX]
 
+print(data_wasmfx_medians)
+
 # Get the chart data: divide first column by second column to obtain asyncify / wasmfx ratio
 ratio = np.divide(
     data_asyncify_medians,
     data_wasmfx_medians,
     out=np.zeros_like(data_asyncify_medians),
-    where=data_wasmfx_medians != 0,
+    where=(data_wasmfx_medians != 0) & (~np.isnan(data_wasmfx_medians)),
 )
 
 # Get the standard deviation for the ratio.

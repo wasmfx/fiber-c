@@ -25,7 +25,6 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
-
 # Add stack pool size options in wasmtime benchmarking script for a particular benchmark
 def wasmtime_stack_pool_size_upd(benchmark: str):
     if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():

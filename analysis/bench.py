@@ -26,8 +26,7 @@ def generate_scripts():
     subprocess.check_call(["analysis/build.py"])
 
 
-def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
-    # call hyperfine to run wasmfx benchmarks
+def run_benchmarks(benchmarks, engines, styles, filename, path, show_output=False):
     subprocess.check_call(
         [
             "hyperfine",
@@ -36,9 +35,9 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             "--runs",
             str(runs_per_trial),
             "--export-json",
-            f"bench_results/{path}/{filename}_wasmfx.json",
+            f"bench_results/{path}/{filename}.json",
             "--export-csv",
-            f"bench_results/{path}/{filename}_wasmfx.csv",
+            f"bench_results/{path}/{filename}.csv",
             "-L",
             "benchmark",
             ",".join(benchmarks),
@@ -47,32 +46,8 @@ def run_benchmarks(benchmarks, engines, filename, path, show_output=False):
             ",".join(engines),
             "-L",
             "style",
-            "wasmfx",
-            "run-scripts/{benchmark}_{engine}_wasmfx.sh",
-        ] + (["--show-output"] if show_output else [])
-    )
-    # and now asyncify benchmarks
-    subprocess.check_call(
-        [
-            "hyperfine",
-            "--warmup",
-            "1",
-            "--runs",
-            str(runs_per_trial),
-            "--export-json",
-            f"bench_results/{path}/{filename}_asyncify.json",
-            "--export-csv",
-            f"bench_results/{path}/{filename}_asyncify.csv",
-            "-L",
-            "benchmark",
-            ",".join(benchmarks),
-            "-L",
-            "engine",
-            ",".join(engines),
-            "-L",
-            "style",
-            "asyncify",
-            "run-scripts/{benchmark}_{engine}_asyncify.sh",
+            ",".join(styles),
+            "run-scripts/{benchmark}_{engine}_{style}.sh",
         ] + (["--show-output"] if show_output else [])
     )
 
@@ -184,9 +159,10 @@ def main():
         ]
     )
     # run benchmarks to obtain runtime data
-    run_benchmarks(
-        benchmarks_to_run, args.engines, "results", path, show_output=args.show_output
-    )
+    for benchmark in benchmarks_to_run:
+        for engine in args.engines:
+            for style in ["asyncify", "wasmfx"]:
+                run_benchmarks([benchmark], [engine], [style], f"results_{benchmark}_{engine}_{style}", path)
     # get information about the compiler, engines, and args used for this run
     get_run_info(f"bench_results/{path}")
     # make runtime charts

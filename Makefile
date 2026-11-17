@@ -14,6 +14,8 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:
+# This one tells it not to apply default make recipes for languages like C.
+.SUFFIXES:
 
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
@@ -22,7 +24,7 @@ run-scripts:
 
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
 	out/%_asyncify.stripped.wasm out/%_wasmfx.stripped.wasm
-			@echo Made $@ #from $^
+	@echo Made $@
 
 $(SWITCH_BENCHMARKS): %: out/%_switch_asyncify.wasm out/%_switch_wasmfx.wasm \
  	out/%_switch_asyncify.cwasm out/%_switch_wasmfx.cwasm \

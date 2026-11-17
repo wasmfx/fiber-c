@@ -307,6 +307,7 @@ ax2.text(0.5, 1.5, engine_info, fontsize=9)
 
 # Export figure
 if args.output:
+    (pathlib.Path(args.output) / "relative").mkdir(exist_ok=True, parents=True)
     plt.savefig(f"{args.output}/relative/relative", bbox_inches="tight")
 else:
     plt.show()
@@ -388,6 +389,7 @@ for i, engine in enumerate(engines):
 
     # Export figure
     if args.output:
+        (pathlib.Path(args.output) / "absolute_engines").mkdir(exist_ok=True, parents=True)
         plt.savefig(
             f"{args.output}/absolute_engines/absolute_{engine}", bbox_inches="tight"
         )
@@ -471,6 +473,7 @@ for i, benchmark in enumerate(benches):
 
     # Export figure
     if args.output:
+        (pathlib.Path(args.output) / "absolute_benchmarks").mkdir(exist_ok=True, parents=True)
         plt.savefig(
             f"{args.output}/absolute_benchmarks/absolute_{benchmark}",
             bbox_inches="tight",

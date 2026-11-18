@@ -99,6 +99,8 @@ def plot(filenames, output):
                     x += bar_width
                     continue
 
+                if key not in lookup:
+                    continue
                 result = lookup[key]
 
                 median = result["median"]

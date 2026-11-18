@@ -15,9 +15,6 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 # This strange invocation tells make not to delete "intermediate products".
 .SECONDARY:
 
-# In c10m's case, override the default initial table size with the following value
-c10m : WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
-
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
 %: out/%_asyncify.wasm out/%_wasmfx.wasm out/%_asyncify.cwasm out/%_wasmfx.cwasm \
@@ -44,9 +41,17 @@ fiber_wasmfx_imports.wasm: src/wasmfx/imports.wat
 fiber_switch_wasmfx_imports.wasm: src/wasmfx/imports_switch.wat
 	$(WASM_INTERP) -d -i src/wasmfx/imports_switch.wat -o fiber_switch_wasmfx_imports.wasm
 
+fiber_c10m_wasmfx_imports.wasm: src/wasmfx/imports_c10m.wat
+	$(WASM_INTERP) -d -i src/wasmfx/imports_c10m.wat -o fiber_c10m_wasmfx_imports.wasm
+
 out/%_wasmfx.unopt.wasm: examples/%.c inc/fiber.h src/wasmfx/imports.wat src/wasmfx/wasmfx_impl.c fiber_wasmfx_imports.wasm | out
 	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
 	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
+	chmod +x $@
+
+out/c10m_wasmfx.unopt.wasm: examples/c10m.c inc/fiber.h src/wasmfx/imports_c10m.wat src/wasmfx/wasmfx_impl.c fiber_c10m_wasmfx_imports.wasm | out
+	$(WASICC) $(SHADOW_STACK_FLAG) -DWASMFX_CONT_SHADOW_STACK_SIZE=$(WASMFX_CONT_SHADOW_STACK_SIZE) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY_C10M) -Wl,--export-table,--export-memory,--export=__stack_pointer src/wasmfx/wasmfx_impl.c $(WASI_FLAGS) $< -o $(@:.wasm=.pre.wasm)
+	$(WASM_MERGE) $(WASM_MERGE_FLAGS) fiber_c10m_wasmfx_imports.wasm "fiber_wasmfx_imports" $(@:.wasm=.pre.wasm) "main" -o $@
 	chmod +x $@
 
 out/%_wasmfx.wasm: out/%_wasmfx.unopt.wasm
@@ -75,6 +80,9 @@ src/wasmfx/imports.wat: src/wasmfx/imports.wat.pp
 
 src/wasmfx/imports_switch.wat: src/wasmfx/imports_switch.wat.pp
 	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY) -E src/wasmfx/imports_switch.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_switch.wat
+
+src/wasmfx/imports_c10m.wat: src/wasmfx/imports.wat.pp
+	$(WASICC) -xc $(SHADOW_STACK_FLAG) -DWASMFX_CONT_TABLE_INITIAL_CAPACITY=$(WASMFX_CONT_TABLE_INITIAL_CAPACITY_C10M) -E src/wasmfx/imports.wat.pp | sed 's/^#.*//g' > src/wasmfx/imports_c10m.wat
 
 %.svg: %.dot
 	dot -Tsvg $< > $@

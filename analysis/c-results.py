@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 import json
@@ -23,7 +22,6 @@ plt.rcParams.update({
     "pdf.fonttype": 42,
     "ps.fonttype": 42,
 })
-
 
 
 def load_data(filenames):
@@ -55,7 +53,6 @@ def load_data(filenames):
     return benchmarks, lookup
 
 
-
 def plot(filenames, output):
     benchmarks, lookup = load_data(filenames)
 
@@ -70,14 +67,9 @@ def plot(filenames, output):
         )
     }
 
-    n_benchmarks = len(benchmarks)
-    n_styles = len(STYLES)
-    n_engines = len(ENGINES)
-
     bar_width = 0.11
     style_gap = 0.035
     engine_gap = 0.20
-
 
     x = 0
     benchmark_positions = defaultdict(list)
@@ -91,15 +83,15 @@ def plot(filenames, output):
 
                 if (key == ("wizard", "asyncify", "c10m")):
                     ax.text(
-                    x,
-                    0.02,                  # Vertical position
-                    "N/A",
-                    ha="center",
-                    va="bottom",
-                    fontsize=10,
-                    color="black",
-                    transform=ax.get_xaxis_transform(),
-                )
+                        x,
+                        0.02,                  # Vertical position
+                        "N/A",
+                        ha="center",
+                        va="bottom",
+                        fontsize=10,
+                        color="black",
+                        transform=ax.get_xaxis_transform(),
+                    )
                     x += bar_width
                     continue
 
@@ -137,7 +129,6 @@ def plot(filenames, output):
             x += style_gap
 
         x += engine_gap
-
 
     # Benchmark labels repeated for each engine/style combination
     # Individual benchmark positions are centered below their bars.

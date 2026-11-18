@@ -60,12 +60,15 @@ def plot(filenames, output):
     fig, ax = plt.subplots(figsize=(9, 3.5))
 
     # Colors distinguish engines
+    #
+    # From the paper:
+    # Colour-blind-friendly palette: V8 #0072B2 and Wasmtime #E69F00
+    # (Okabe--Ito), Wizard #B3B3B3; hatching distinguishes Asyncify.
+    # Benchmark order: itersum, treesum, c10m, pi; error bars omitted.
     colors = {
-        engine: color
-        for engine, color in zip(
-            ENGINES,
-            plt.cm.Set2(np.linspace(0, 1, len(ENGINES)))
-        )
+        "d8": ("#0072B2"),
+        "wasmtime": ("#E69F00"),
+        "wizard": ("#B3B3B3")
     }
 
     bar_width = 0.11
@@ -106,7 +109,7 @@ def plot(filenames, output):
                     x,
                     median,
                     width=bar_width,
-                    color=colors[engine],
+                    color=[colors[engine]],
                     edgecolor="black",
                     linewidth=0.4,
                     hatch="//" if style == "asyncify" else None,

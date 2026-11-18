@@ -130,8 +130,14 @@ ax.axhline(
     label="Equal performance",
 )
 
+def capitalize_language(name: str):
+    if name.lower() == "ocaml":
+        return "OCaml"
+    else:
+        return name.capitalize()
+
 ax.set_xticks(x)
-ax.set_xticklabels([lang.capitalize() for lang in languages])
+ax.set_xticklabels([capitalize_language(lang) for lang in languages])
 
 ax.set_ylabel("Ratio (Baseline / Wasmfx)")
 

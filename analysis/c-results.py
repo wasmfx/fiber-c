@@ -28,6 +28,7 @@ def load_data(filenames):
     results = []
 
     for filename in filenames:
+        print(f"Reading {filename}")
         with open(filename) as f:
             data = json.load(f)
             results.extend(data["results"])

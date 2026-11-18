@@ -65,7 +65,10 @@ df["ratio_error"] = df["ratio"] * np.sqrt(
 # Plot configuration
 # -----------------------------
 
-languages = df["language"].unique()
+present_languages = df["language"].unique()  # to verify
+languages = ["c", "go", "kotlin", "ocaml"]
+assert (sorted(present_languages)== sorted(languages))
+
 benchmarks = [
     b for b in BENCHMARK_ORDER
     if b in df["benchmark"].unique()

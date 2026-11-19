@@ -61,18 +61,14 @@ def generate_scripts(benchmark: str, engines: list[str]):
                     engine_options=config["D8_OPTIONS"]
                     suffix="wasm"
             # stick this all into the script template
-            # Don't run c10m on normal wasmtime or wizard for now
-            if benchmark == "c10m" and (engine == "wizard"):
-                content = ""
-            else:
-                content = SCRIPT_TEMPLATE.format(
-                    engine_path=ENGINE_ROOT_DIR + engine_path,
-                    engine_options=engine_options,
-                    benchmark=benchmark,
-                    mode=mode,
-                    suffix=suffix,
-                    arg=arg,
-                )
+            content = SCRIPT_TEMPLATE.format(
+                engine_path=ENGINE_ROOT_DIR + engine_path,
+                engine_options=engine_options,
+                benchmark=benchmark,
+                mode=mode,
+                suffix=suffix,
+                arg=arg,
+            )
             make_script(Path("run-scripts/" + script_name), content)
 
 def main():

@@ -17,6 +17,9 @@ SWITCH_BENCHMARKS= hello itersum treesum pi roundrobin
 # This one tells it not to apply default make recipes for languages like C.
 .SUFFIXES:
 
+# Overriding this here because we're fiddling with different approaches to how to configure it.
+WASMFX_CONT_TABLE_INITIAL_CAPACITY=10001
+
 all: $(BENCHMARKS) $(SWITCH_BENCHMARKS)
 
 run-scripts:

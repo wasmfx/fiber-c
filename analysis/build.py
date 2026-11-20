@@ -28,9 +28,23 @@ def make_script(filename: Path, content: str):
 # Add stack pool size options in wasmtime benchmarking script for a particular benchmark
 def wasmtime_stack_pool_size_upd(benchmark: str):
     if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
-        return f"{config['WASMTIME_OPTIONS']}" + (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
+        return (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
     else:
-        return f"{config['WASMTIME_OPTIONS']}"
+        return ""
+
+extra_engine_options = {
+    ("wizard", "c10m"): " --stack-size=1M --max-stacks=10001 ",
+    ("wasmtime", "*"): " -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001"
+}
+
+def get_extra_engine_options(benchmark, engine):
+    if (benchmark, engine) in extra_engine_options:
+        return extra_engine_options[(benchmark, engine)]
+    if (benchmark, "*") in extra_engine_options:
+        return extra_engine_options[(benchmark, "*")]
+    if ("*", engine) in extra_engine_options:
+        return extra_engine_options[("*", engine)]
+    return ""
 
 def generate_scripts(benchmark: str, engines: list[str]):
     # Set arguments for benchmarks that need them
@@ -49,29 +63,25 @@ def generate_scripts(benchmark: str, engines: list[str]):
             match engine:
                 case "wasmtime":
                     engine_path=config["WASMTIME_PATH"]
+                    engine_options=config['WASMTIME_OPTIONS'] + get_extra_engine_options(engine, benchmark)
                     suffix="cwasm"
-                    engine_options=wasmtime_stack_pool_size_upd(benchmark)
                 case "wizard":
                     engine_path=config["WIZARD_PATH"]
-                    engine_options=config["WIZARD_OPTIONS"]
+                    engine_options=config["WIZARD_OPTIONS"] + get_extra_engine_options(engine, benchmark)
                     suffix="wasm"
                 case "d8":
                     engine_path=config["D8_PATH"]
-                    engine_options=config["D8_OPTIONS"]
+                    engine_options=config["D8_OPTIONS"] + get_extra_engine_options(engine, benchmark)
                     suffix="wasm"
             # stick this all into the script template
-            # Don't run c10m on normal wasmtime or wizard for now
-            if benchmark == "c10m" and (engine == "wizard"):
-                content = ""
-            else:
-                content = SCRIPT_TEMPLATE.format(
-                    engine_path=ENGINE_ROOT_DIR + engine_path,
-                    engine_options=engine_options,
-                    benchmark=benchmark,
-                    mode=mode,
-                    suffix=suffix,
-                    arg=arg,
-                )
+            content = SCRIPT_TEMPLATE.format(
+                engine_path=ENGINE_ROOT_DIR + engine_path,
+                engine_options=engine_options,
+                benchmark=benchmark,
+                mode=mode,
+                suffix=suffix,
+                arg=arg,
+            )
             make_script(Path("run-scripts/" + script_name), content)
 
 def main():

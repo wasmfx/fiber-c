@@ -25,16 +25,9 @@ def make_script(filename: Path, content: str):
     filename.write_text(content)
     filename.chmod(0o755)
 
-# Add stack pool size options in wasmtime benchmarking script for a particular benchmark
-def wasmtime_stack_pool_size_upd(benchmark: str):
-    if benchmark in config["WASMTIME_STACK_POOL_SIZES"].keys():
-        return (" -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001")
-    else:
-        return ""
-
 extra_engine_options = {
     ("wizard", "c10m"): " --stack-size=1M --max-stacks=10001 ",
-    ("wasmtime", "*"): " -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001"
+    ("wasmtime", "c10m"): " -O=pooling-allocator=y,pooling-max-tables-per-module=2,pooling-total-stacks=10001"
 }
 
 def get_extra_engine_options(benchmark, engine):

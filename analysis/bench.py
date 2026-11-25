@@ -57,8 +57,10 @@ def run_benchmarks(benchmarks, engines, styles, filename, path, show_output=Fals
             "style",
             ",".join(styles),
             "run-scripts/{benchmark}_{engine}_{style}.sh",
-        ] + (["--show-output"] if show_output else [])
+        ]
+        + (["--show-output"] if show_output else [])
     )
+
 
 def get_binary_sizes(benchmarks, filename, path):
     data = []
@@ -74,10 +76,12 @@ def get_binary_sizes(benchmarks, filename, path):
     with open(f"bench_results/{path}/{filename}.json", "w") as f:
         json.dump(data, f)
 
+
 def get_run_info(out_dir):
     subprocess.check_call(["python3", "run_info/compiler_info.py", out_dir])
     subprocess.check_call(["python3", "run_info/engine_info.py", out_dir])
     subprocess.check_call(["python3", "run_info/param_info.py", out_dir])
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -176,7 +180,13 @@ def main():
     for benchmark in benchmarks_to_run:
         for engine in args.engines:
             for style in ["asyncify", "wasmfx"]:
-                run_benchmarks([benchmark], [engine], [style], f"results_{benchmark}_{engine}_{style}", path)
+                run_benchmarks(
+                    [benchmark],
+                    [engine],
+                    [style],
+                    f"results_{benchmark}_{engine}_{style}",
+                    path,
+                )
     # get information about the compiler, engines, and args used for this run
     get_run_info(f"bench_results/{path}")
     # make runtime charts

@@ -21,7 +21,7 @@ BENCHMARKS_FIBER_C : [
     "treesum",
     "c10m",
     "pi",
-    "roundrobin",
+    # "roundrobin",
   ]
 
 # List of switch benchmarks
@@ -29,7 +29,7 @@ BENCHMARKS_FIBER_C_SWITCH : [
     "itersum",
     "treesum",
     "pi",
-    "roundrobin",
+    # "roundrobin",
 ]
 
 # Arguments for benchmarks that require arguments

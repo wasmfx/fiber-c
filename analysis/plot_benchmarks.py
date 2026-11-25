@@ -81,7 +81,10 @@ data = []
 for i, filename in enumerate(results_files):
     print(f"Loading data from {filename}...")
     with open(filename) as f:
-        data.extend(json.load(f)["results"])
+        try:
+            data.extend(json.load(f)["results"])
+        except json.JSONDecodeError:
+            pass
 
 # Load JSON files containing compiler/engine/parameter into a dict
 build_info = {}
@@ -111,6 +114,7 @@ def fetch_one(data, style, benchmark, engine):
         if style_is(x, style) and benchmark_is(x, benchmark) and engine_is(x, engine)
     ]
     if len(results) < 1:
+        return None
         raise ValueError(f"No data for {style} {benchmark} {engine}.")
     if len(results) > 1:
         raise ValueError(f"Too many data points for {style} {benchmark} {engine}!")
@@ -152,10 +156,10 @@ def array_positions(ary):
 
 nested_data = organize(data)
 data_medians = np.array(
-    [[[cell["median"] for cell in row] for row in plane] for plane in nested_data]
+    [[[cell["median"] if cell is not None else np.nan for cell in row] for row in plane] for plane in nested_data]
 )
 data_stddev = np.array(
-    [[[cell["stddev"] for cell in row] for row in plane] for plane in nested_data]
+    [[[cell["stddev"] if cell is not None else np.nan for cell in row] for row in plane] for plane in nested_data]
 )
 # We now have two numpy arrays whose dimensions are [style][benchmark][engine]
 

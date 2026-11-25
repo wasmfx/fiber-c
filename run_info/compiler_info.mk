@@ -14,5 +14,4 @@ dump:
 	@echo wasicc = $(WASICC)
 	@echo wasi_flags = $(WASI_FLAGS)
 	@echo wasm_interp = $(WASM_INTERP)
-	@echo wasmfxtime = $(WASMFXTIME)
 	@echo wasmtime = $(WASMTIME)

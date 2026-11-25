@@ -32,12 +32,6 @@ runs_per_trial = 11
 
 
 def disabled(engine, benchmark, style):
-    if engine == "wasmfxtime" and style == "switch":
-        return True
-    if engine == "wasmtime" and benchmark == "c10m":  # No stack pooling
-        return True
-    if engine == "wasmfxtime" and benchmark != "c10m":  # Don't double-run things on both wasmtime and wasmfxtime.
-        return True
     return False
 
 

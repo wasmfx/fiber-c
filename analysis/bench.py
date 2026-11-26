@@ -31,6 +31,12 @@ all_engines = config["ENGINES"]
 runs_per_trial = 11
 
 
+def disabled(engine, benchmark, style):
+    if benchmark == "c10m" and engine == "wizard":
+        return True
+    return False
+
+
 def generate_scripts():
     subprocess.check_call(["analysis/build.py"])
 
@@ -60,6 +66,7 @@ def run_benchmarks(benchmarks, engines, styles, filename, path, show_output=Fals
         ] + (["--show-output"] if show_output else [])
     )
 
+
 def get_binary_sizes(benchmarks, filename, path):
     data = []
     for benchmark in benchmarks:
@@ -74,10 +81,12 @@ def get_binary_sizes(benchmarks, filename, path):
     with open(f"bench_results/{path}/{filename}.json", "w") as f:
         json.dump(data, f)
 
+
 def get_run_info(out_dir):
     subprocess.check_call(["python3", "run_info/compiler_info.py", out_dir])
     subprocess.check_call(["python3", "run_info/engine_info.py", out_dir])
     subprocess.check_call(["python3", "run_info/param_info.py", out_dir])
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -176,7 +185,15 @@ def main():
     for benchmark in benchmarks_to_run:
         for engine in args.engines:
             for style in ["asyncify", "wasmfx"]:
-                run_benchmarks([benchmark], [engine], [style], f"results_{benchmark}_{engine}_{style}", path)
+                if not disabled(engine, benchmark, style):
+                    run_benchmarks(
+                        [benchmark],
+                        [engine],
+                        [style],
+                        f"results_{benchmark}_{engine}_{style}",
+                        path,
+                        show_output=args.show_output,
+                    )
     # get information about the compiler, engines, and args used for this run
     get_run_info(f"bench_results/{path}")
     # make runtime charts

@@ -27,7 +27,11 @@ def main(arg):
     wasm_merge_ver = subprocess.check_output([config["wasm_merge"], "--version"]).decode().split('\n', 1)[0]
     wasicc_ver = subprocess.check_output([config["wasicc"], "-v"], stderr=subprocess.STDOUT).decode().split('\n', 1)[0]
     wasm_interp_ver = "TODO: figure out how to get version" #subprocess.check_output([config["wasm_interp"],"-v", "-e", "\"\""]).decode().split('\n', 1)[0]
-    wasmfxtime_ver = subprocess.check_output([config["wasmfxtime"], "--version"]).decode().split('\n', 1)[0]
+    wasmfxtime_ver = "MISSING"
+    try:
+        wasmfxtime_ver = subprocess.check_output([config["wasmfxtime"], "--version"]).decode().split('\n', 1)[0]
+    except:
+        pass
     # and this is wasmtime
     wasmtime_ver = subprocess.check_output([config["wasmtime"], "--version"]).decode().split('\n', 1)[0]
 

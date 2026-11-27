@@ -27,8 +27,6 @@ def main(arg):
     wasm_merge_ver = subprocess.check_output([config["wasm_merge"], "--version"]).decode().split('\n', 1)[0]
     wasicc_ver = subprocess.check_output([config["wasicc"], "-v"], stderr=subprocess.STDOUT).decode().split('\n', 1)[0]
     wasm_interp_ver = "TODO: figure out how to get version" #subprocess.check_output([config["wasm_interp"],"-v", "-e", "\"\""]).decode().split('\n', 1)[0]
-    wasmfxtime_ver = subprocess.check_output([config["wasmfxtime"], "--version"]).decode().split('\n', 1)[0]
-    # and this is wasmtime
     wasmtime_ver = subprocess.check_output([config["wasmtime"], "--version"]).decode().split('\n', 1)[0]
 
     # -------- Cleaning up the json --------
@@ -55,8 +53,8 @@ def main(arg):
     waiscc_flags = config["wasi_flags"]
     wasicc_flags = waiscc_flags[waiscc_flags.index("-O"):][:3]
 
-    # Extract version number from wasmfxtime_ver (removing long number at the end)
-    wasmfxtime_ver = strip_brackets(wasmfxtime_ver)
+    # Extract version number from wasmtime_ver (removing long number at the end)
+    wasmtime_ver = strip_brackets(wasmtime_ver)
 
     # make the output directory if necessary
     os.makedirs(str(arg), exist_ok=True)
@@ -68,7 +66,7 @@ def main(arg):
             "wasm_opt_flags" : wasm_opt_flags,
             "wasicc_ver" : wasicc_ver,
             "wasicc_flags" : wasicc_flags,
-            "wasmfxtime_ver" : wasmfxtime_ver,
+            "wasmtime_ver" : wasmtime_ver,
             "wasmtime_ver" : wasmtime_ver,
             # The commented out lines dump *all* info, which we might want at some point!
             #"wasm_opt_flags" : config["wasm_opt_flags"],

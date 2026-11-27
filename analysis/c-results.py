@@ -1,11 +1,11 @@
-
 #!/usr/bin/env python3
 
-import json
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
 from collections import defaultdict
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 
 
 ENGINES = ["d8", "wasmtime", "wizard"]
@@ -30,6 +30,9 @@ def load_data(filenames):
     results = []
 
     for filename in filenames:
+        fsize = os.stat(filename).st_size
+        if fsize == 0:
+            continue
         with open(filename) as f:
             data = json.load(f)
             results.extend(data["results"])
